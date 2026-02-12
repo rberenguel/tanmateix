@@ -143,10 +143,10 @@ export const LINEAR_VOCABULARIES = {
     minimal: { forward: "#>", backward: "<#", equal: "=" },
   },
   latency: {
-    forward: ["has higher latency than", "has more latency than"],
-    backward: ["has lower latency than", "has less latency than"],
+    forward: ["has lower latency than", "has less latency than"],
+    backward: ["has higher latency than", "has more latency than"],
     equal: ["has the same latency as"],
-    minimal: { forward: "⏱>", backward: "<⏱", equal: "=" },
+    minimal: { forward: "<⏱", backward: "⏱>", equal: "=" },
   },
   throughput: {
     forward: ["has higher throughput than", "has more throughput than"],
@@ -161,10 +161,10 @@ export const LINEAR_VOCABULARIES = {
     minimal: { forward: "✅>", backward: "<✅", equal: "=" },
   },
   error_rate: {
-    forward: ["has a higher error rate than", "has more errors than"],
-    backward: ["has a lower error rate than", "has fewer errors than"],
+    forward: ["has a lower error rate than", "has fewer errors than"],
+    backward: ["has a higher error rate than", "has more errors than"],
     equal: ["has the same error rate as"],
-    minimal: { forward: "❌>", backward: "<❌", equal: "=" },
+    minimal: { forward: "<❌", backward: "❌>", equal: "=" },
   },
   reliability: {
     forward: ["is more reliable than"],

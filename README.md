@@ -111,7 +111,6 @@ See [verification/README.md](verification/README.md) for technical details.
 ## File Structure
 
 ```
-v2/
 ├── core/
 │   ├── Entity.js           - Immutable logical objects
 │   ├── Relation.js         - Typed relationships
@@ -153,8 +152,18 @@ v2/
 │   ├── SpatialVerifier.js  - Prolog-based spatial verification
 │   └── README.md           - Verification documentation
 
+├── tests/
+│   ├── test-basic.js       - Basic tests
+│   └── test-full.js        - Full integration tests
+
+├── lib/
+│   └── tau-prolog-core.js  - Tau Prolog library
+
+├── fonts/
+│   └── phosphor/           - Phosphor icon font
+
+├── index.html              - Main game UI
 ├── index.js                - Main exports
-├── test-basic.js           - Basic tests
-├── test-full.js            - Full integration tests
+├── manifest.json           - PWA manifest
 └── README.md               - This file
 ```

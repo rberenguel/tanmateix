@@ -48,6 +48,12 @@ export class Path {
     let firstEdgePhrasing = null;
     const totalEdges = this.entities.length - 1;
 
+    // For categorical: decide pattern ONCE for the whole path
+    let categoricalPattern = null;
+    if (isCategorical && totalEdges === 2) {
+      categoricalPattern = Math.random();
+    }
+
     // For each consecutive pair in the ordering
     for (let i = 0; i < this.entities.length - 1; i++) {
       const entityA = this.entities[i];
@@ -57,7 +63,10 @@ export class Path {
         // Spatial: Calculate actual vector from grid positions
         const spatialGrid = this.pathProperties.spatialGrid;
         const vector = spatialGrid.getVector(entityA, entityB);
-        const vectorKey = JSON.stringify(vector);
+
+        // Normalize vector for vocabulary lookup (vocab keys are normalized)
+        const normalizedVector = this.normalize(vector);
+        const vectorKey = JSON.stringify(normalizedVector);
 
         // Get text from vocab set for this specific vector
         const vocabSet = this.vocabulary.vocabSet;
@@ -77,8 +86,33 @@ export class Path {
         );
         relations.push(relation);
       } else if (isCategorical) {
-        // Categorical: Randomly pick "same" or "different" for each edge
-        const useSame = Math.random() < 0.5;
+        // Categorical (unbounded universe):
+        // Can only make valid inferences with at most 1 "different" edge
+        // So: either all "same", or exactly 1 "different"
+
+        // For 2-edge paths: 50% all same, 50% one different
+        // For longer paths: all same (to keep it simple)
+        let useSame;
+        if (totalEdges === 2) {
+          // Use pre-calculated pattern (same for all edges in this path)
+          // 1. Both same (50%)
+          // 2. First different, second same (25%)
+          // 3. First same, second different (25%)
+          if (categoricalPattern < 0.5) {
+            // Both same
+            useSame = true;
+          } else if (categoricalPattern < 0.75) {
+            // First different, second same
+            useSame = (i === 1);
+          } else {
+            // First same, second different
+            useSame = (i === 0);
+          }
+        } else {
+          // Longer paths: just use all "same" for now
+          useSame = true;
+        }
+
         const text = useSame
           ? this.vocabulary.forward
           : this.vocabulary.backward;
@@ -157,6 +191,7 @@ export class Path {
     }
 
     const isSpatial = this.relationType.name === "Spatial";
+    const isCategorical = this.relationType.name === "Categorical";
 
     if (isSpatial) {
       // Spatial: Sum all edge vectors to get inferred vector
@@ -183,6 +218,52 @@ export class Path {
         text,
         inferredVector,
       );
+    } else if (isCategorical) {
+      // Categorical (unbounded universe):
+      // - same + same = same ✓
+      // - same + different = different ✓
+      // - different + same = different ✓
+      // - different + different = UNKNOWN ✗ (cannot infer!)
+
+      // Count "different" edges
+      const differentCount = this.relations.filter(
+        (rel) => rel.properties.direction === -1,
+      ).length;
+
+      console.log("DEBUG Categorical inference:");
+      console.log("  Relations count:", this.relations.length);
+      console.log("  Relations:", this.relations.map(r => ({
+        text: r.properties.text,
+        direction: r.properties.direction,
+        entities: r.entities.map(e => e.displayValue)
+      })));
+      console.log("  Different count:", differentCount);
+
+      // Can only infer if there's at most 1 "different" edge
+      if (differentCount === 0) {
+        // All "same" → conclusion is "same"
+        console.log("  → Returning SAME conclusion");
+        return this.createRelation(
+          this.entities[0],
+          this.entities[this.entities.length - 1],
+          this.vocabulary.forward,
+          1,
+        );
+      } else if (differentCount === 1) {
+        // Exactly 1 "different" → endpoints are in different categories
+        console.log("  → Returning DIFFERENT conclusion");
+        return this.createRelation(
+          this.entities[0],
+          this.entities[this.entities.length - 1],
+          this.vocabulary.backward,
+          -1,
+        );
+      } else {
+        // Multiple "different" edges → cannot infer (different + different = unknown)
+        // Return null to indicate no valid inference
+        console.log("  → Returning NULL (cannot infer)");
+        return null;
+      }
     } else {
       // Linear: Can phrase either way (randomly chosen)
       const useForwardPhrasing = Math.random() < 0.5;

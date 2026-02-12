@@ -10,7 +10,7 @@ import {
   CATEGORICAL_VOCABULARIES,
 } from "../render/Vocabulary.js";
 import { SpatialGrid } from "../utils/SpatialGrid.js";
-import { SpatialVerifier } from "../verification/SpatialVerifier.js";
+import { QuestionVerifier } from "../verification/QuestionVerifier.js";
 
 /**
  * PathBasedQuestionGenerator - new architecture using Path abstraction
@@ -26,7 +26,7 @@ export class PathBasedQuestionGenerator {
     this.config = config;
     this.random = config.random;
     this.entityFactory = config.entityFactory;
-    this.spatialVerifier = new SpatialVerifier();
+    this.verifier = new QuestionVerifier();
   }
 
   /**
@@ -99,6 +99,13 @@ export class PathBasedQuestionGenerator {
     const conclusionPath = this.random.pickRandom(paths);
     const inferredRelation = conclusionPath.getInferredRelation();
 
+    // Safety check: if no valid inference (shouldn't happen with fixed categorical generation)
+    if (!inferredRelation) {
+      throw new Error(
+        `Cannot infer conclusion from ${conclusionPath.relationType.name} path - this indicates a bug in path generation`,
+      );
+    }
+
     // Randomly decide if valid or invalid
     const isValid = this.random.coinFlip();
     let conclusion;
@@ -156,6 +163,9 @@ export class PathBasedQuestionGenerator {
     console.log("Valid?", isValid);
     console.log("========================\n");
 
+    // Get spatial grid if any spatial path exists
+    const spatialPath = paths.find((p) => p.relationType.name === "Spatial");
+
     const question = new Question({
       network,
       premises: shuffledPremises,
@@ -170,65 +180,63 @@ export class PathBasedQuestionGenerator {
           new Set(paths.map((p) => p.relationType.name)).size > 1,
         level: numPaths > 1 ? numPaths : 0,
         numPaths: numPaths,
+        spatialGrid: spatialPath?.pathProperties.spatialGrid,
       },
     });
 
-    // Verify spatial paths if any exist
-    const spatialPath = paths.find((p) => p.relationType.name === "Spatial");
-    if (spatialPath) {
-      const spatialGrid = spatialPath.pathProperties.spatialGrid;
+    // Verify question logic for all relation types
+    const relationType = conclusionPath.relationType.name;
+    let verificationQuestion = question;
+    let spatialGrid = null;
 
-      // Extract only spatial premises for verification
-      const spatialPremises = allPremises.filter(
-        (p) => p.properties.vector !== undefined,
+    // For multi-path questions with mixed types, extract only premises matching the conclusion type
+    if (
+      paths.length > 1 &&
+      new Set(paths.map((p) => p.relationType.name)).size > 1
+    ) {
+      const relevantPremises = allPremises.filter(
+        (p) => p.type.name === relationType,
       );
+      const relevantNetwork = new PremiseNetwork();
+      entities.forEach((e) => relevantNetwork.addEntity(e));
+      relevantPremises.forEach((r) => relevantNetwork.addRelation(r));
 
-      // Only verify if the conclusion is also spatial (has a vector property)
-      const isSpatialConclusion = conclusion.properties.vector !== undefined;
+      verificationQuestion = new Question({
+        network: relevantNetwork,
+        premises: relevantPremises,
+        conclusion: conclusion,
+        isValid: question.isValid,
+        metadata: question.metadata,
+      });
+    }
 
-      if (isSpatialConclusion) {
-        // Create a temporary network with only spatial relations
-        const spatialNetwork = new PremiseNetwork();
-        entities.forEach((e) => spatialNetwork.addEntity(e));
-        spatialPremises.forEach((r) => spatialNetwork.addRelation(r));
+    // Get spatial grid if needed
+    if (relationType === "Spatial") {
+      const spatialPath = paths.find((p) => p.relationType.name === "Spatial");
+      spatialGrid = spatialPath.pathProperties.spatialGrid;
+    }
 
-        // Create a temporary question for verification
-        const verificationQuestion = new Question({
-          network: spatialNetwork,
-          premises: spatialPremises,
-          conclusion: conclusion,
-          isValid: question.isValid,
-          metadata: question.metadata,
-        });
+    // Verify the question
+    const verification = await this.verifier.verifyQuestion(
+      verificationQuestion,
+      spatialGrid,
+    );
 
-        const verification = await this.spatialVerifier.verifyQuestion(
-          verificationQuestion,
-          spatialGrid,
-        );
+    if (!verification.valid) {
+      console.error(
+        `❌ ${relationType.toUpperCase()} VERIFICATION FAILED:`,
+        verification.error,
+      );
+      console.error("This indicates a bug in question generation!");
+      console.error("Details:", verification.details);
 
-        if (!verification.valid) {
-          console.error(
-            "❌ SPATIAL VERIFICATION FAILED (multi-path):",
-            verification.error,
-          );
-          console.error("This indicates a bug in spatial path generation!");
-
-          if (typeof window !== "undefined" && window.showVerificationError) {
-            window.showVerificationError(verification.error);
-          }
-        } else if (verification.warning) {
-          console.warn(
-            "⚠️  Spatial verification (multi-path):",
-            verification.warning,
-          );
-        } else {
-          console.log("✓ Spatial path verified in multi-path question");
-        }
-      } else {
-        console.log(
-          "⚠️  Multi-path has spatial premises but non-spatial conclusion - skipping spatial verification",
-        );
+      if (typeof window !== "undefined" && window.showVerificationError) {
+        window.showVerificationError(verification.error);
       }
+    } else if (verification.warning) {
+      console.warn(`⚠️  ${relationType} verification:`, verification.warning);
+    } else {
+      console.log(`✓ ${relationType} question verified`);
     }
 
     return question;
@@ -432,7 +440,7 @@ export class PathBasedQuestionGenerator {
     });
 
     // Verify question with Prolog
-    const verification = await this.spatialVerifier.verifyQuestion(
+    const verification = await this.verifier.verifyQuestion(
       question,
       spatialGrid,
     );
@@ -470,20 +478,56 @@ export class PathBasedQuestionGenerator {
   }
 
   /**
-   * Create an invalid conclusion by swapping the entities
+   * Create an invalid conclusion by swapping the entities or flipping the relation
    * This maintains the same vocabulary but makes it logically wrong
    */
   createInvalidConclusion(path, validConclusion) {
-    // Valid: "A is less than C" (direction: 1) or "C is more than A" (direction: -1)
-    // Invalid: Swap to make it wrong
-    // If valid is "A is less than C", invalid is "C is less than A" (using same word "less")
-    // If valid is "C is more than A", invalid is "A is more than C" (using same word "more")
+    const isCategorical = path.relationType.name === "Categorical";
+    const isSpatial = path.relationType.name === "Spatial";
 
-    return path.createRelation(
-      validConclusion.entities[1], // Swap
-      validConclusion.entities[0], // Swap
-      validConclusion.properties.text, // Keep same text (makes it wrong)
-      validConclusion.properties.direction, // Keep same direction semantically
-    );
+    if (isCategorical) {
+      // Categorical: Flip the relation (same ↔ different)
+      // Can't just swap entities because "same" is symmetric
+      const newDirection = -validConclusion.properties.direction;
+      const newText =
+        newDirection === 1 ? path.vocabulary.forward : path.vocabulary.backward;
+
+      return path.createRelation(
+        validConclusion.entities[0],
+        validConclusion.entities[1],
+        newText,
+        newDirection,
+      );
+    } else if (isSpatial) {
+      // Spatial: Flip the vector to make it wrong
+      // If valid is "A is north of B" (vector [0,1]), invalid is "A is south of B" (vector [0,-1])
+      const flippedVector = validConclusion.properties.vector.map(v => -v);
+      const normalizedVector = flippedVector.map(v => v === 0 ? 0 : v / Math.abs(v));
+      const vectorKey = JSON.stringify(normalizedVector);
+
+      // Get text for flipped vector
+      const vocabSet = path.vocabulary.vocabSet;
+      const flippedText = vocabSet[vectorKey] ? vocabSet[vectorKey][0] : validConclusion.properties.text;
+
+      return path.createRelationWithVector(
+        validConclusion.entities[0],
+        validConclusion.entities[1],
+        flippedText,
+        flippedVector,
+      );
+    } else {
+      // Linear: Swap entities to make it wrong
+      // Valid: "A is less than C" (direction: 1) or "C is more than A" (direction: -1)
+      // Invalid: Swap to make it wrong
+      // If valid is "A is less than C", invalid is "C is less than A" (using same word "less")
+      // If valid is "C is more than A", invalid is "A is more than C" (using same word "more")
+
+      return path.createRelation(
+        validConclusion.entities[1], // Swap
+        validConclusion.entities[0], // Swap
+        validConclusion.properties.text, // Keep same text (makes it wrong)
+        validConclusion.properties.direction, // Keep same direction semantically
+      );
+    }
   }
 }
