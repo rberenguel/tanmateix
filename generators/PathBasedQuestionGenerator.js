@@ -24,31 +24,68 @@ export class PathBasedQuestionGenerator {
   }
 
   /**
-   * Generate a level 0 question: 2 premises, 1 path, 3 entities
+   * Generate a multi-path question with configurable number of paths
+   * @param {number} numPaths - Number of paths to generate (default: 1)
+   * Each path creates 2 premises over the SAME 3 entities
    */
-  generateLevel0Question() {
-    // Create 3 entities
+  generateMultiPathQuestion(numPaths = 1) {
+    // Always use 3 entities - all paths share the same entity graph
     const entities = this.entityFactory.createEntities(3);
 
-    // Pick one relationship type
-    const relationTypes = [
+    // Create paths - all using the same 3 entities
+    const paths = [];
+    const allPremises = [];
+    const network = new PremiseNetwork();
+    entities.forEach(e => network.addEntity(e));
+
+    // Available relation types
+    const availableRelationTypes = [
       new LinearRelationType(),
       new SpatialRelationType(2),
       new CategoricalRelationType()
     ];
-    const relationType = this.random.pickRandom(relationTypes);
 
-    // Generate one path through all 3 entities
-    const path = this.createPath(entities, relationType);
+    // Track used relation types to avoid duplicates
+    const usedTypes = new Set();
 
-    // Build network for consistency with existing code
-    const network = new PremiseNetwork();
-    entities.forEach(e => network.addEntity(e));
-    path.getPremises().forEach(r => network.addRelation(r));
+    for (let i = 0; i < numPaths; i++) {
+      // All paths use the same entities: [A, B, C]
+      const pathEntities = entities;
 
-    // Get premises and conclusion
-    const premises = path.getPremises(); // 2 premises
-    const inferredRelation = path.getInferredRelation(); // The conclusion
+      // Pick a unique relationship type for this path if possible
+      let relationType;
+      if (usedTypes.size < availableRelationTypes.length) {
+        // Pick from unused types
+        const unusedTypes = availableRelationTypes.filter(
+          rt => !usedTypes.has(rt.name)
+        );
+        relationType = this.random.pickRandom(unusedTypes);
+      } else {
+        // All types used, create new instances
+        relationType = this.random.pickRandom(availableRelationTypes.map(rt => {
+          if (rt instanceof LinearRelationType) return new LinearRelationType();
+          if (rt instanceof SpatialRelationType) return new SpatialRelationType(2);
+          if (rt instanceof CategoricalRelationType) return new CategoricalRelationType();
+        }));
+      }
+
+      usedTypes.add(relationType.name);
+
+      // Generate path
+      const path = this.createPath(pathEntities, relationType);
+      paths.push(path);
+
+      // Add relations to network
+      path.getPremises().forEach(r => network.addRelation(r));
+      allPremises.push(...path.getPremises());
+    }
+
+    // Shuffle premises to mix different relation types (makes it harder)
+    const shuffledPremises = this.random.shuffle(allPremises);
+
+    // Pick one path for the conclusion
+    const conclusionPath = this.random.pickRandom(paths);
+    const inferredRelation = conclusionPath.getInferredRelation();
 
     // Randomly decide if valid or invalid
     const isValid = this.random.coinFlip();
@@ -57,30 +94,36 @@ export class PathBasedQuestionGenerator {
     if (isValid) {
       conclusion = inferredRelation;
     } else {
-      // Create invalid conclusion (flip the direction)
-      conclusion = this.createInvalidConclusion(path, inferredRelation);
+      conclusion = this.createInvalidConclusion(conclusionPath, inferredRelation);
     }
 
     // DEBUG LOGGING
-    console.log('=== GENERATED QUESTION ===');
-    console.log('Relation Type:', relationType.name);
+    console.log('=== GENERATED MULTI-PATH QUESTION ===');
+    console.log('Number of paths:', numPaths);
+    console.log('Number of entities:', entities.length);
+    console.log('Total premises:', allPremises.length);
     console.log('Entities:', entities.map(e => e.displayValue));
 
-    if (relationType.name === 'Spatial') {
-      console.log('Grid Layout:');
-      console.log(path.pathProperties.spatialGrid.toString());
-      console.log('Edge Vectors:', path.pathProperties.edgeVectors);
-    }
-
-    console.log('Vocabulary:', path.vocabulary);
-    console.log('Premises:');
-    premises.forEach((p, i) => {
-      console.log(`  ${i+1}. ${p.entities[0].displayValue} [${p.properties.text}] ${p.entities[1].displayValue}`);
-      if (p.properties.vector) {
-        console.log(`     Vector:`, p.properties.vector);
+    paths.forEach((path, idx) => {
+      console.log(`\nPath ${idx + 1}:`);
+      console.log('  Relation Type:', path.relationType.name);
+      console.log('  Entities:', path.entities.map(e => e.displayValue));
+      console.log('  Vocabulary:', path.vocabulary);
+      if (path.relationType.name === 'Spatial') {
+        console.log('  Grid Layout:');
+        console.log(path.pathProperties.spatialGrid.toString());
+        console.log('  Edge Vectors:', path.pathProperties.edgeVectors);
       }
+      console.log('  Premises:');
+      path.getPremises().forEach((p, i) => {
+        console.log(`    ${i+1}. ${p.entities[0].displayValue} [${p.properties.text}] ${p.entities[1].displayValue}`);
+        if (p.properties.vector) {
+          console.log(`       Vector:`, p.properties.vector);
+        }
+      });
     });
-    console.log('Conclusion:', `${conclusion.entities[0].displayValue} [${conclusion.properties.text}] ${conclusion.entities[1].displayValue}`);
+
+    console.log('\nConclusion:', `${conclusion.entities[0].displayValue} [${conclusion.properties.text}] ${conclusion.entities[1].displayValue}`);
     if (conclusion.properties.vector) {
       console.log('   Inferred Vector:', conclusion.properties.vector);
     }
@@ -89,17 +132,25 @@ export class PathBasedQuestionGenerator {
 
     return new Question({
       network,
-      premises,
+      premises: shuffledPremises,
       conclusion,
       isValid,
       metadata: {
-        premiseCount: premises.length,
+        premiseCount: allPremises.length,
         entityCount: entities.length,
-        relationTypes: [relationType.name],
-        isMixed: false,
-        level: 0
+        relationTypes: paths.map(p => p.relationType.name),
+        isMixed: paths.length > 1 && new Set(paths.map(p => p.relationType.name)).size > 1,
+        level: numPaths > 1 ? numPaths : 0,
+        numPaths: numPaths
       }
     });
+  }
+
+  /**
+   * Generate a level 0 question: 2 premises, 1 path, 3 entities
+   */
+  generateLevel0Question() {
+    return this.generateMultiPathQuestion(1);
   }
 
   /**

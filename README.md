@@ -25,6 +25,35 @@ The game features various types of logical relationships including:
 - **Spatial relationships** (directional positioning)
 - **Categorical relationships** (same/different categories)
 
+### Advanced: Multi-Path Questions
+
+The game supports generating questions with multiple premise paths over the **same 3 entities**. Each path uses a different relationship type (linear, spatial, or categorical), creating more complex logical reasoning challenges.
+
+**Example 2-path question:**
+- **Entity Graph:** A, B, C
+- **Path 1 (Linear):** "A is larger than B", "B is larger than C"
+- **Path 2 (Spatial):** "A is north of B", "B is north of C"
+- **Conclusion:** "A is larger than C?" (from Path 1)
+
+**Try it in the browser console:**
+
+```javascript
+// Generate a 2-path question (4 premises over 3 entities)
+window.tanmateix.test2Path()
+
+// Generate a 3-path question (6 premises over 3 entities)
+window.tanmateix.test3Path()
+
+// Set number of paths for subsequent questions
+window.tanmateix.numPaths = 2
+window.tanmateix.newQuestion()
+```
+
+Each path creates 2 premises over the same 3 entities:
+- 1 path = 2 premises (default single-path)
+- 2 paths = 4 premises (2 different relationship types)
+- 3 paths = 6 premises (all 3 relationship types)
+
 ## Architecture
 
 A modular architecture for generating logic questions with composable premise types.

@@ -57,9 +57,20 @@ export class SpatialRelationType extends RelationType {
   /**
    * Check contradiction
    * Same entities with different vectors = contradiction
+   * Only applies within the same relation type
    */
   contradicts(rel1, rel2) {
+    // Different relation types don't contradict - they're different aspects
+    if (rel1.type.name !== rel2.type.name) {
+      return false;
+    }
+
+    // Same type: check if same entities have different vectors
     if (this.sameEntities(rel1, rel2)) {
+      // Safety check: both must have vectors
+      if (!rel1.properties.vector || !rel2.properties.vector) {
+        return false;
+      }
       return !this.vectorsEqual(rel1.properties.vector, rel2.properties.vector);
     }
     return false;

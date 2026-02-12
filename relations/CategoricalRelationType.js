@@ -45,8 +45,14 @@ export class CategoricalRelationType extends RelationType {
   /**
    * Check contradiction
    * Same entities with different sameness = contradiction
+   * Different relation types don't contradict
    */
   contradicts(rel1, rel2) {
+    // Different relation types don't contradict - they're different aspects
+    if (rel1.type.name !== rel2.type.name) {
+      return false;
+    }
+
     if (this.sameEntities(rel1, rel2)) {
       return rel1.properties.same !== rel2.properties.same;
     }

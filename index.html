@@ -61,6 +61,11 @@
 
             <p>Train your logical reasoning skills through 10 questions per game!</p>
 
+            <h3>Advanced Features</h3>
+            <p>The game supports multi-path questions with configurable complexity. Open the browser console and try:</p>
+            <p><code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">window.tanmateix.test2Path()</code> - Generate a 2-path question (4 premises)</p>
+            <p><code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">window.tanmateix.numPaths = 3</code> - Set number of paths for new questions</p>
+
             <p class="source-link">Inspired by <a href="https://github.com/soamsy/Syllogimous-v3" target="_blank">Syllogimous-v3</a></p>
         </div>
     </div>
@@ -96,11 +101,54 @@ const generator = new PathBasedQuestionGenerator({
 
 const renderer = new Renderer();
 
+// Expose API for testing different configurations
+window.tanmateix = {
+    numPaths: 1, // Default to 1 path (2 premises)
+    generator: generator,
+    gameState: gameState,
+
+    // Generate a new question with current numPaths setting
+    newQuestion: () => {
+        const question = generator.generateMultiPathQuestion(window.tanmateix.numPaths);
+        gameState.currentQuestion = question;
+        gameState.answered = false;
+
+        // Render
+        const container = document.getElementById('game-container');
+        container.innerHTML = renderer.renderGameUI(question);
+
+        // Add event listeners to buttons
+        container.querySelectorAll('.btn').forEach(btn => {
+            btn.addEventListener('click', handleAnswer);
+        });
+
+        // Update debug info
+        const debugInfo = document.getElementById('debug-info');
+        debugInfo.innerHTML = renderer.renderNetworkInfo(question);
+
+        return question;
+    },
+
+    // Quick test with different path counts
+    test2Path: () => {
+        window.tanmateix.numPaths = 2;
+        return window.tanmateix.newQuestion();
+    },
+    test3Path: () => {
+        window.tanmateix.numPaths = 3;
+        return window.tanmateix.newQuestion();
+    },
+    test4Path: () => {
+        window.tanmateix.numPaths = 4;
+        return window.tanmateix.newQuestion();
+    }
+};
+
 // Generate and display question
 function newQuestion() {
-    // Level 0: Simple 2-premise, 1-path questions
-    // Uses the new path-based architecture for 100% consistency
-    gameState.currentQuestion = generator.generateLevel0Question();
+    // Use the configured number of paths from window.tanmateix
+    const numPaths = window.tanmateix.numPaths || 1;
+    gameState.currentQuestion = generator.generateMultiPathQuestion(numPaths);
     gameState.answered = false;
 
     // Render
