@@ -501,13 +501,17 @@ export class PathBasedQuestionGenerator {
     } else if (isSpatial) {
       // Spatial: Flip the vector to make it wrong
       // If valid is "A is north of B" (vector [0,1]), invalid is "A is south of B" (vector [0,-1])
-      const flippedVector = validConclusion.properties.vector.map(v => -v);
-      const normalizedVector = flippedVector.map(v => v === 0 ? 0 : v / Math.abs(v));
+      const flippedVector = validConclusion.properties.vector.map((v) => -v);
+      const normalizedVector = flippedVector.map((v) =>
+        v === 0 ? 0 : v / Math.abs(v),
+      );
       const vectorKey = JSON.stringify(normalizedVector);
 
       // Get text for flipped vector
       const vocabSet = path.vocabulary.vocabSet;
-      const flippedText = vocabSet[vectorKey] ? vocabSet[vectorKey][0] : validConclusion.properties.text;
+      const flippedText = vocabSet[vectorKey]
+        ? vocabSet[vectorKey][0]
+        : validConclusion.properties.text;
 
       return path.createRelationWithVector(
         validConclusion.entities[0],

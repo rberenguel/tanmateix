@@ -103,10 +103,10 @@ export class Path {
             useSame = true;
           } else if (categoricalPattern < 0.75) {
             // First different, second same
-            useSame = (i === 1);
+            useSame = i === 1;
           } else {
             // First same, second different
-            useSame = (i === 0);
+            useSame = i === 0;
           }
         } else {
           // Longer paths: just use all "same" for now
@@ -232,11 +232,14 @@ export class Path {
 
       console.log("DEBUG Categorical inference:");
       console.log("  Relations count:", this.relations.length);
-      console.log("  Relations:", this.relations.map(r => ({
-        text: r.properties.text,
-        direction: r.properties.direction,
-        entities: r.entities.map(e => e.displayValue)
-      })));
+      console.log(
+        "  Relations:",
+        this.relations.map((r) => ({
+          text: r.properties.text,
+          direction: r.properties.direction,
+          entities: r.entities.map((e) => e.displayValue),
+        })),
+      );
       console.log("  Different count:", differentCount);
 
       // Can only infer if there's at most 1 "different" edge

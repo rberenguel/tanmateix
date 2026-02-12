@@ -276,7 +276,9 @@ export class QuestionVerifier {
       // Add direct facts
       for (const premise of question.premises) {
         const [e1, e2] = [premise.entities[0].id, premise.entities[1].id];
-        console.log(`  ${e1} [${premise.properties.text}] ${e2} (direction: ${premise.properties.direction})`);
+        console.log(
+          `  ${e1} [${premise.properties.text}] ${e2} (direction: ${premise.properties.direction})`,
+        );
 
         // Direction 1: e1 < e2, Direction -1: e2 < e1
         if (premise.properties.direction === 1) {
@@ -305,7 +307,8 @@ export class QuestionVerifier {
         if (lessThan.get(e1).has(e1)) {
           return {
             valid: false,
-            error: "Linear verification failed: Cycle detected (entity less than itself)",
+            error:
+              "Linear verification failed: Cycle detected (entity less than itself)",
             details: { entity: e1 },
           };
         }
@@ -313,7 +316,8 @@ export class QuestionVerifier {
           if (lessThan.get(e2).has(e1)) {
             return {
               valid: false,
-              error: "Linear verification failed: Contradiction detected (A<B and B<A)",
+              error:
+                "Linear verification failed: Contradiction detected (A<B and B<A)",
               details: { e1, e2 },
             };
           }
@@ -321,7 +325,10 @@ export class QuestionVerifier {
       }
 
       // Check conclusion
-      const [c1, c2] = [question.conclusion.entities[0].id, question.conclusion.entities[1].id];
+      const [c1, c2] = [
+        question.conclusion.entities[0].id,
+        question.conclusion.entities[1].id,
+      ];
       let actualRelation; // true if c1 < c2
 
       if (question.conclusion.properties.direction === 1) {
@@ -339,9 +346,10 @@ export class QuestionVerifier {
       } else {
         return {
           valid: false,
-          error: "Linear verification failed: Question validity doesn't match logical derivation",
+          error:
+            "Linear verification failed: Question validity doesn't match logical derivation",
           details: {
-            conclusion: `${c1.id} ${question.conclusion.properties.direction === 1 ? '<' : '>'} ${c2.id}`,
+            conclusion: `${c1.id} ${question.conclusion.properties.direction === 1 ? "<" : ">"} ${c2.id}`,
             actuallyTrue: actualRelation,
             claimedValid: question.isValid,
             expectedValid: expectedIsValid,
@@ -424,7 +432,8 @@ export class QuestionVerifier {
           if (entity1 !== entity2 && diffPairs.has(`${entity1}:${entity2}`)) {
             return {
               valid: false,
-              error: "Categorical verification failed: Contradiction (entities marked as both same and different)",
+              error:
+                "Categorical verification failed: Contradiction (entities marked as both same and different)",
               details: { entity1, entity2 },
             };
           }
@@ -440,39 +449,45 @@ export class QuestionVerifier {
       let actualRelationship; // 'same', 'different', or 'unknown'
 
       if (sameGraph.get(c1).has(c2)) {
-        actualRelationship = 'same';
+        actualRelationship = "same";
       } else if (diffPairs.has(`${c1}:${c2}`)) {
-        actualRelationship = 'different';
+        actualRelationship = "different";
       } else {
-        actualRelationship = 'unknown';
+        actualRelationship = "unknown";
       }
 
       // Validate conclusion
-      if (actualRelationship === 'unknown') {
+      if (actualRelationship === "unknown") {
         // Can't determine - question should be invalid
         if (question.isValid) {
           return {
             valid: false,
-            error: "Categorical verification failed: Conclusion cannot be determined from premises",
-            details: { c1, c2, conclusion: conclusionIsSame ? 'same' : 'different' },
+            error:
+              "Categorical verification failed: Conclusion cannot be determined from premises",
+            details: {
+              c1,
+              c2,
+              conclusion: conclusionIsSame ? "same" : "different",
+            },
           };
         } else {
           return { valid: true }; // Correctly marked as invalid
         }
       } else {
         // Can determine - check if conclusion matches
-        const actualIsSame = (actualRelationship === 'same');
-        const conclusionMatches = (actualIsSame === conclusionIsSame);
+        const actualIsSame = actualRelationship === "same";
+        const conclusionMatches = actualIsSame === conclusionIsSame;
 
         if (conclusionMatches === question.isValid) {
           return { valid: true };
         } else {
           return {
             valid: false,
-            error: "Categorical verification failed: Question validity doesn't match logical derivation",
+            error:
+              "Categorical verification failed: Question validity doesn't match logical derivation",
             details: {
-              conclusion: `${c1} ${conclusionIsSame ? 'same' : 'different'} ${c2}`,
-              actual: `${c1} ${actualIsSame ? 'same' : 'different'} ${c2}`,
+              conclusion: `${c1} ${conclusionIsSame ? "same" : "different"} ${c2}`,
+              actual: `${c1} ${actualIsSame ? "same" : "different"} ${c2}`,
               claimedValid: question.isValid,
               expectedValid: conclusionMatches,
             },
@@ -529,8 +544,15 @@ export class QuestionVerifier {
           } else {
             resolve({
               valid: false,
-              error: "Spatial verification failed: Question is logically inconsistent",
-              details: { entityPositions, premises, prologConclusion, claimedAnswer, query },
+              error:
+                "Spatial verification failed: Question is logically inconsistent",
+              details: {
+                entityPositions,
+                premises,
+                prologConclusion,
+                claimedAnswer,
+                query,
+              },
             });
           }
         });
@@ -562,7 +584,9 @@ export class QuestionVerifier {
       if (!relation.properties.vector) {
         continue;
       }
-      const relationName = this.vectorToRelationName(relation.properties.vector);
+      const relationName = this.vectorToRelationName(
+        relation.properties.vector,
+      );
       const e1 = relation.entities[0].id;
       const e2 = relation.entities[1].id;
       premises.push(`premise(${relationName}, ${e1}, ${e2})`);
@@ -575,7 +599,9 @@ export class QuestionVerifier {
     if (!conclusion.properties.vector) {
       throw new Error("buildConclusion called with non-spatial conclusion");
     }
-    const relationName = this.vectorToRelationName(conclusion.properties.vector);
+    const relationName = this.vectorToRelationName(
+      conclusion.properties.vector,
+    );
     const e1 = conclusion.entities[0].id;
     const e2 = conclusion.entities[1].id;
     return `conclusion(${relationName}, ${e1}, ${e2})`;
