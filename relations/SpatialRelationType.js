@@ -31,13 +31,14 @@ export class SpatialRelationType extends RelationType {
 
   /**
    * Validate relation
+   * Now accepts raw (unnormalized) vectors for correct transitive inference
    */
   validate(relation) {
     return (
       relation.entities.length === 2 &&
       Array.isArray(relation.properties.vector) &&
       relation.properties.vector.length === this.dimensions &&
-      relation.properties.vector.every((v) => [-1, 0, 1].includes(v))
+      relation.properties.vector.every((v) => Number.isInteger(v))
     );
   }
 

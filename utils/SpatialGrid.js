@@ -70,7 +70,7 @@ export class SpatialGrid {
 
   /**
    * Get the spatial vector from one entity to another
-   * Returns normalized vector [-1, 0, 1] in each dimension
+   * Returns RAW vector (not normalized) to preserve magnitude for inference
    */
   getVector(fromEntity, toEntity) {
     const fromPos = this.entityPositions.get(fromEntity.id);
@@ -81,13 +81,13 @@ export class SpatialGrid {
     }
 
     // Calculate raw vector (difference in positions)
+    // DON'T normalize here - we need magnitude for correct transitive inference
     const rawVector = [
       toPos[0] - fromPos[0], // x difference
       toPos[1] - fromPos[1], // y difference
     ];
 
-    // Normalize to [-1, 0, 1]
-    return this.normalize(rawVector);
+    return rawVector;
   }
 
   /**

@@ -279,6 +279,9 @@ export class ConclusionGenerator {
         Array.from(new Set(network.relations.map((r) => r.type))),
       );
 
+    // Infer relations to check if random relation would be valid
+    const inferred = network.inferRelations();
+
     // Create random relation
     let relation;
     if (type instanceof LinearRelationType) {
@@ -288,10 +291,51 @@ export class ConclusionGenerator {
       );
       const dimension = existingLinearRel?.properties.dimension || "size";
 
-      relation = type.createRelation([e1, e2], {
-        direction: this.random.pickRandom([-1, 1]),
-        dimension: dimension, // Use same dimension as premises
-      });
+      // For linear relations, we need to ensure we generate an invalid direction
+      // Try both directions and pick one that doesn't match inferred relations
+      const directions = [-1, 1];
+      let attempts = 0;
+      const maxAttempts = 2;
+
+      do {
+        const direction = this.random.pickRandom(directions);
+        relation = type.createRelation([e1, e2], {
+          direction: direction,
+          dimension: dimension, // Use same dimension as premises
+        });
+
+        // Check if this matches any inferred relation
+        const matchesInferred = inferred.some(
+          (inf) =>
+            inf.type === type &&
+            inf.entities[0].id === e1.id &&
+            inf.entities[1].id === e2.id &&
+            inf.properties.direction === direction &&
+            inf.properties.dimension === dimension,
+        );
+
+        if (!matchesInferred) {
+          break; // Found a direction that doesn't match inferred relations
+        }
+
+        // Remove this direction from candidates
+        const idx = directions.indexOf(direction);
+        if (idx !== -1) {
+          directions.splice(idx, 1);
+        }
+
+        attempts++;
+      } while (attempts < maxAttempts && directions.length > 0);
+
+      // If we couldn't find a non-matching direction after trying both,
+      // fall back to contradict strategy
+      if (attempts >= maxAttempts || directions.length === 0) {
+        return this.generateInvalidConclusion(
+          network,
+          relationType,
+          "contradict",
+        );
+      }
     } else if (type instanceof SpatialRelationType) {
       // Get vocabStyle from existing spatial relations to maintain consistency
       const existingSpatialRel = network.relations.find(
@@ -300,14 +344,88 @@ export class ConclusionGenerator {
       const vocabStyle =
         existingSpatialRel?.properties.vocabStyle || "cardinal";
 
-      relation = type.createRelation([e1, e2], {
-        vector: this.random.randomVector(type.dimensions),
-        vocabStyle: vocabStyle, // Preserve vocabulary style
-      });
+      // For spatial relations, we need to ensure we generate an invalid vector
+      // Try multiple random vectors until we find one that doesn't match inferred relations
+      let attempts = 0;
+      const maxAttempts = 20;
+
+      do {
+        relation = type.createRelation([e1, e2], {
+          vector: this.random.randomVector(type.dimensions),
+          vocabStyle: vocabStyle, // Preserve vocabulary style
+        });
+
+        // Check if this matches any inferred relation
+        const matchesInferred = inferred.some(
+          (inf) =>
+            inf.type === type &&
+            inf.entities[0].id === e1.id &&
+            inf.entities[1].id === e2.id &&
+            inf.properties.vector.every(
+              (v, idx) => v === relation.properties.vector[idx],
+            ),
+        );
+
+        if (!matchesInferred) {
+          break; // Found a vector that doesn't match inferred relations
+        }
+
+        attempts++;
+      } while (attempts < maxAttempts);
+
+      // If we couldn't find a non-matching vector after many attempts,
+      // fall back to contradict strategy
+      if (attempts >= maxAttempts) {
+        return this.generateInvalidConclusion(
+          network,
+          relationType,
+          "contradict",
+        );
+      }
     } else if (type instanceof CategoricalRelationType) {
-      relation = type.createRelation([e1, e2], {
-        same: this.random.coinFlip(),
-      });
+      // For categorical relations, we need to ensure we generate an invalid sameness value
+      // Try both values and pick one that doesn't match inferred relations
+      const values = [true, false];
+      let attempts = 0;
+      const maxAttempts = 2;
+
+      do {
+        const same = this.random.pickRandom(values);
+        relation = type.createRelation([e1, e2], {
+          same: same,
+        });
+
+        // Check if this matches any inferred relation
+        const matchesInferred = inferred.some(
+          (inf) =>
+            inf.type === type &&
+            inf.entities[0].id === e1.id &&
+            inf.entities[1].id === e2.id &&
+            inf.properties.same === same,
+        );
+
+        if (!matchesInferred) {
+          break; // Found a value that doesn't match inferred relations
+        }
+
+        // Remove this value from candidates
+        const idx = values.indexOf(same);
+        if (idx !== -1) {
+          values.splice(idx, 1);
+        }
+
+        attempts++;
+      } while (attempts < maxAttempts && values.length > 0);
+
+      // If we couldn't find a non-matching value after trying both,
+      // fall back to contradict strategy
+      if (attempts >= maxAttempts || values.length === 0) {
+        return this.generateInvalidConclusion(
+          network,
+          relationType,
+          "contradict",
+        );
+      }
     }
 
     return {

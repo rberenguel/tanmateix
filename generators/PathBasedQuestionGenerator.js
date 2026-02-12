@@ -10,6 +10,7 @@ import {
   CATEGORICAL_VOCABULARIES,
 } from "../render/Vocabulary.js";
 import { SpatialGrid } from "../utils/SpatialGrid.js";
+import { SpatialVerifier } from "../verification/SpatialVerifier.js";
 
 /**
  * PathBasedQuestionGenerator - new architecture using Path abstraction
@@ -25,6 +26,7 @@ export class PathBasedQuestionGenerator {
     this.config = config;
     this.random = config.random;
     this.entityFactory = config.entityFactory;
+    this.spatialVerifier = new SpatialVerifier();
   }
 
   /**
@@ -33,7 +35,7 @@ export class PathBasedQuestionGenerator {
    * @param {number} entitiesPerPath - Number of entities per path (default: 3)
    * Each path creates (entitiesPerPath - 1) premises over the SAME entities
    */
-  generateMultiPathQuestion(numPaths = 1, entitiesPerPath = 3) {
+  async generateMultiPathQuestion(numPaths = 1, entitiesPerPath = 3) {
     // All paths share the same entity graph
     const entities = this.entityFactory.createEntities(entitiesPerPath);
 
@@ -154,7 +156,7 @@ export class PathBasedQuestionGenerator {
     console.log("Valid?", isValid);
     console.log("========================\n");
 
-    return new Question({
+    const question = new Question({
       network,
       premises: shuffledPremises,
       conclusion,
@@ -170,13 +172,73 @@ export class PathBasedQuestionGenerator {
         numPaths: numPaths,
       },
     });
+
+    // Verify spatial paths if any exist
+    const spatialPath = paths.find((p) => p.relationType.name === "Spatial");
+    if (spatialPath) {
+      const spatialGrid = spatialPath.pathProperties.spatialGrid;
+
+      // Extract only spatial premises for verification
+      const spatialPremises = allPremises.filter(
+        (p) => p.properties.vector !== undefined,
+      );
+
+      // Only verify if the conclusion is also spatial (has a vector property)
+      const isSpatialConclusion = conclusion.properties.vector !== undefined;
+
+      if (isSpatialConclusion) {
+        // Create a temporary network with only spatial relations
+        const spatialNetwork = new PremiseNetwork();
+        entities.forEach((e) => spatialNetwork.addEntity(e));
+        spatialPremises.forEach((r) => spatialNetwork.addRelation(r));
+
+        // Create a temporary question for verification
+        const verificationQuestion = new Question({
+          network: spatialNetwork,
+          premises: spatialPremises,
+          conclusion: conclusion,
+          isValid: question.isValid,
+          metadata: question.metadata,
+        });
+
+        const verification = await this.spatialVerifier.verifyQuestion(
+          verificationQuestion,
+          spatialGrid,
+        );
+
+        if (!verification.valid) {
+          console.error(
+            "❌ SPATIAL VERIFICATION FAILED (multi-path):",
+            verification.error,
+          );
+          console.error("This indicates a bug in spatial path generation!");
+
+          if (typeof window !== "undefined" && window.showVerificationError) {
+            window.showVerificationError(verification.error);
+          }
+        } else if (verification.warning) {
+          console.warn(
+            "⚠️  Spatial verification (multi-path):",
+            verification.warning,
+          );
+        } else {
+          console.log("✓ Spatial path verified in multi-path question");
+        }
+      } else {
+        console.log(
+          "⚠️  Multi-path has spatial premises but non-spatial conclusion - skipping spatial verification",
+        );
+      }
+    }
+
+    return question;
   }
 
   /**
    * Generate a level 0 question: 2 premises, 1 path, 3 entities
    */
-  generateLevel0Question() {
-    return this.generateMultiPathQuestion(1);
+  async generateLevel0Question() {
+    return await this.generateMultiPathQuestion(1);
   }
 
   /**
@@ -256,7 +318,7 @@ export class PathBasedQuestionGenerator {
    * @param {number} numEntities - Number of entities (default: 3)
    * Creates all pairwise spatial relations (or a subset)
    */
-  generateSpatialGraphQuestion(numEntities = 3) {
+  async generateSpatialGraphQuestion(numEntities = 3, _retryCount = 0) {
     const entities = this.entityFactory.createEntities(numEntities);
     const relationType = new SpatialRelationType(2);
 
@@ -285,7 +347,11 @@ export class PathBasedQuestionGenerator {
         const entityB = entities[j];
 
         const vector = spatialGrid.getVector(entityA, entityB);
-        const vectorKey = JSON.stringify(vector);
+        // Normalize for vocabulary lookup (vocabSet keys are normalized)
+        const normalizedVector = vector.map((v) =>
+          v === 0 ? 0 : v / Math.abs(v),
+        );
+        const vectorKey = JSON.stringify(normalizedVector);
         const text = vocabSet[vectorKey]
           ? vocabSet[vectorKey][0]
           : "relates to";
@@ -348,9 +414,8 @@ export class PathBasedQuestionGenerator {
     console.log(spatialGrid.toString());
     console.log("Shown premises:", shownPremises.length, "/", premises.length);
     console.log("Valid?", isValid);
-    console.log("========================\n");
 
-    return new Question({
+    const question = new Question({
       network,
       premises: shownPremises,
       conclusion,
@@ -362,8 +427,46 @@ export class PathBasedQuestionGenerator {
         isMixed: false,
         level: "spatial-graph",
         graphType: "fully-connected",
+        spatialGrid: spatialGrid, // Include grid for verification
       },
     });
+
+    // Verify question with Prolog
+    const verification = await this.spatialVerifier.verifyQuestion(
+      question,
+      spatialGrid,
+    );
+    if (!verification.valid) {
+      console.error("❌ SPATIAL VERIFICATION FAILED:", verification.error);
+      console.error("Question details:", verification.details);
+      console.error("This indicates a bug in spatial question generation!");
+
+      // Show modal in browser
+      if (typeof window !== "undefined" && window.showVerificationError) {
+        window.showVerificationError(verification.error);
+      } else if (typeof window === "undefined") {
+        // Node.js: throw error
+        throw new Error("Spatial verification failed: " + verification.error);
+      }
+
+      // Regenerate a new question (with retry limit to prevent infinite loop)
+      if (_retryCount < 10) {
+        return this.generateSpatialGraphQuestion(numEntities, _retryCount + 1);
+      } else {
+        // After 10 retries, just return the invalid question with a warning
+        console.error(
+          "⚠️  Could not generate valid spatial question after 10 retries",
+        );
+        return question;
+      }
+    } else if (verification.warning) {
+      console.warn("⚠️  Spatial verification:", verification.warning);
+    } else {
+      console.log("✓ Spatial question verified");
+    }
+    console.log("========================\n");
+
+    return question;
   }
 
   /**

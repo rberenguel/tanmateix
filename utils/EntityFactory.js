@@ -106,7 +106,31 @@ export class EntityFactory {
       "Y",
       "Z",
     ];
-    const bannedWords = ["ASS", "FUCK", "SHIT", "DAMN", "HELL", "CRAP", "PISS"];
+    // Banned words to avoid offensive combinations
+    const bannedWords = [
+      "DIC",
+      "DIK",
+      "COC",
+      "COK",
+      "FUC",
+      "FUK",
+      "FEC",
+      "FEK",
+      "NIG",
+      "PIS",
+      "TIT",
+      "SEX",
+      "GAY",
+      "FAG",
+      "CUM",
+      "ASS",
+      "FUCK",
+      "SHIT",
+      "DAMN",
+      "HELL",
+      "CRAP",
+      "PISS",
+    ];
 
     let word = "";
     const length = this.config.nonsenseWordLength;

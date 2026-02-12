@@ -151,6 +151,20 @@
             the maximum difficulty?
           </p>
 
+          <h3>Relationship Types</h3>
+          <p>Questions feature various logical relationships:</p>
+          <ul>
+            <li>
+              <strong>Linear</strong> (28 dimensions): size, speed, temperature,
+              latency, throughput, availability, and more
+            </li>
+            <li>
+              <strong>Spatial</strong>: directional positioning (north, south,
+              east, west, etc.)
+            </li>
+            <li><strong>Categorical</strong>: same/different categories</li>
+          </ul>
+
           <h3>Example</h3>
           <p>
             <em>Premise 1:</em> A is larger than B<br />
@@ -168,9 +182,53 @@
               >Syllogimous-v3</a
             >
           </p>
+
+          <p class="source-link">
+            Uses
+            <a href="https://tau-prolog.org/" target="_blank">Tau Prolog</a>
+            for logical inference (BSD 3-Clause License,
+            <a href="lib/TAU-PROLOG-LICENSE" target="_blank">view license</a>)
+          </p>
         </div>
       </div>
     </div>
+
+    <!-- Verification Error Modal -->
+    <div id="verification-error-modal" class="modal-overlay">
+      <div class="modal-content">
+        <button class="modal-close" id="verification-error-close">
+          &times;
+        </button>
+        <div class="modal-header">
+          <div class="modal-title-container">
+            <h2 style="color: #ff4444">⚠️ Verification Failed</h2>
+          </div>
+        </div>
+        <div class="modal-text">
+          <p>
+            <strong>A bug was detected in question generation!</strong>
+          </p>
+          <p
+            id="verification-error-message"
+            style="
+              font-family: monospace;
+              background: #1a1a1a;
+              padding: 10px;
+              border-left: 3px solid #ff4444;
+            "
+          >
+            Error details will appear here...
+          </p>
+          <p style="color: #888">
+            This question was skipped and a new one was generated. Check the
+            browser console for full debugging details.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Load Tau Prolog for relation type inference -->
+    <script src="lib/tau-prolog-core.js"></script>
 
     <script type="module">
       import { PathBasedQuestionGenerator } from "./generators/PathBasedQuestionGenerator.js";
@@ -215,6 +273,28 @@
           "temperature",
           "weight",
           "height",
+          "age",
+          "temporal",
+          "distance",
+          "depth",
+          "width",
+          "length",
+          "volume",
+          "density",
+          "hardness",
+          "cost",
+          "difficulty",
+          "strength",
+          "power",
+          "value",
+          "quality",
+          "rank",
+          "quantity",
+          "latency",
+          "throughput",
+          "availability",
+          "error_rate",
+          "reliability",
         ],
         random,
       });
@@ -229,8 +309,8 @@
         gameState: gameState,
 
         // Generate a new question with current settings
-        newQuestion: () => {
-          const question = generator.generateMultiPathQuestion(
+        newQuestion: async () => {
+          const question = await generator.generateMultiPathQuestion(
             window.tanmateix.numPaths,
             window.tanmateix.entitiesPerPath,
           );
@@ -275,8 +355,9 @@
         },
 
         // Test spatial graph (fully-connected configuration)
-        testSpatialGraph: (entities = 3) => {
-          const question = generator.generateSpatialGraphQuestion(entities);
+        testSpatialGraph: async (entities = 3) => {
+          const question =
+            await generator.generateSpatialGraphQuestion(entities);
           gameState.currentQuestion = question;
           gameState.answered = false;
 
@@ -313,13 +394,28 @@
 
           console.log("\nTry both and compare which feels better!");
         },
+
+        // Turn off timer for testing
+        timerOff: () => {
+          if (gameState.timer) {
+            clearInterval(gameState.timer);
+            gameState.timer = null;
+            console.log("⏸️  Timer stopped");
+          }
+        },
+
+        // Turn on timer
+        timerOn: () => {
+          startTimer();
+          console.log("▶️  Timer started");
+        },
       };
 
       // Generate and display question
-      function newQuestion() {
+      async function newQuestion() {
         // Use difficulty settings
         const { numPaths, entitiesPerPath, timeLimit } = gameState.difficulty;
-        gameState.currentQuestion = generator.generateMultiPathQuestion(
+        gameState.currentQuestion = await generator.generateMultiPathQuestion(
           numPaths,
           entitiesPerPath,
         );
@@ -662,6 +758,31 @@
           modal.classList.remove("visible");
         }
       });
+
+      // Verification error modal handlers
+      const verificationModal = document.getElementById(
+        "verification-error-modal",
+      );
+      const verificationCloseBtn = document.getElementById(
+        "verification-error-close",
+      );
+
+      verificationCloseBtn.addEventListener("click", () => {
+        verificationModal.classList.remove("visible");
+      });
+
+      verificationModal.addEventListener("click", (e) => {
+        if (e.target === verificationModal) {
+          verificationModal.classList.remove("visible");
+        }
+      });
+
+      // Expose function to show verification error
+      window.showVerificationError = (errorMessage) => {
+        document.getElementById("verification-error-message").textContent =
+          errorMessage;
+        verificationModal.classList.add("visible");
+      };
 
       // Start game handler
       const startBtn = document.getElementById("start-btn");

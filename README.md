@@ -8,7 +8,7 @@ Inspired by [Syllogimous-v3](https://github.com/soamsy/Syllogimous-v3).
 
 ## About the Game
 
-**Tanmateix** presents you with logical premises and asks you to determine if a conclusion follows logically. Each game consists of 10 questions testing your deductive reasoning abilities.
+**Tanmateix** presents you with logical premises and asks you to determine if a conclusion follows logically. Each game consists of 100 questions testing your deductive reasoning abilities.
 
 ### Example Question
 
@@ -23,8 +23,14 @@ Inspired by [Syllogimous-v3](https://github.com/soamsy/Syllogimous-v3).
 
 The game features various types of logical relationships including:
 
-- **Linear relationships** (size, speed, brightness, temperature, weight, height)
-- **Spatial relationships** (directional positioning)
+- **Linear relationships** (28 possible dimensions):
+  - Physical: size, speed, brightness, temperature, weight, height, distance, depth, width, length, volume, density, hardness
+  - Time: age, temporal
+  - Value: cost, value, quality, rank
+  - Capability: strength, power, difficulty
+  - Quantity: quantity
+  - Metrics: latency, throughput, availability, error_rate, reliability
+- **Spatial relationships** (directional positioning: north, south, east, west, etc.)
 - **Categorical relationships** (same/different categories)
 
 ### Advanced: Multi-Path Questions
@@ -73,9 +79,34 @@ Examples:
 - 2 paths, 4 entities = 6 premises
 - 3 paths, 4 entities = 9 premises
 
+## Third-Party Libraries
+
+This project uses [Tau Prolog](https://tau-prolog.org/) for logical inference and contradiction detection in Linear and Categorical relation types. Tau Prolog is licensed under the BSD 3-Clause License. See [lib/TAU-PROLOG-LICENSE](lib/TAU-PROLOG-LICENSE) for the full license text.
+
 ## Architecture
 
 A modular architecture for generating logic questions with composable premise types.
+
+### Logical Inference
+
+Linear and Categorical relation types use **Tau Prolog** for:
+
+- Transitive inference (e.g., A>B, B>C ⇒ A>C)
+- Contradiction detection (e.g., rejecting A>B>C>A cycles)
+- Declarative logic rules instead of manual implementation
+
+Spatial relations use custom vector arithmetic for 2D/3D positioning.
+
+### Verification System
+
+Spatial questions are automatically verified using Tau Prolog to ensure logical consistency:
+
+- Questions are generated using fast vector arithmetic
+- Each generated question is verified using Prolog rules
+- If verification fails, a new question is generated (with retry limit)
+- This provides automatic quality assurance for all spatial reasoning questions
+
+See [verification/README.md](verification/README.md) for technical details.
 
 ## File Structure
 
@@ -117,6 +148,10 @@ v2/
 │   ├── Renderer.js         - Question rendering
 │   ├── Vocabulary.js       - Vocabulary management
 │   └── index.js
+
+├── verification/
+│   ├── SpatialVerifier.js  - Prolog-based spatial verification
+│   └── README.md           - Verification documentation
 
 ├── index.js                - Main exports
 ├── test-basic.js           - Basic tests

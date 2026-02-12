@@ -5,19 +5,19 @@
 
 export const LINEAR_VOCABULARIES = {
   size: {
-    forward: ["is larger than", "is bigger than", "exceeds"],
+    forward: ["is larger than", "is bigger than"],
     backward: ["is smaller than", "is less than"],
     equal: ["is equal to", "is the same size as"],
     minimal: { forward: ">", backward: "<", equal: "=" },
   },
   speed: {
     forward: ["is faster than", "is quicker than", "outpaces"],
-    backward: ["is slower than", "lags behind"],
+    backward: ["is slower than"],
     equal: ["has the same speed as", "matches the speed of"],
     minimal: { forward: ">>", backward: "<<", equal: "=" },
   },
   brightness: {
-    forward: ["is brighter than", "is more luminous than"],
+    forward: ["is brighter than"],
     backward: ["is dimmer than", "is less bright than"],
     equal: ["has the same brightness as"],
     minimal: { forward: "☀>", backward: "<☀", equal: "=" },
@@ -41,16 +41,136 @@ export const LINEAR_VOCABULARIES = {
     minimal: { forward: "↑", backward: "↓", equal: "=" },
   },
   age: {
-    forward: ["is older than", "is more aged than"],
+    forward: ["is older than"],
     backward: ["is younger than", "is newer than"],
     equal: ["is the same age as"],
     minimal: { forward: "⏳>", backward: "<⏳", equal: "=" },
   },
   temporal: {
-    forward: ["is before", "precedes", "comes before"],
-    backward: ["is after", "follows", "comes after"],
+    forward: ["is before", "comes before"],
+    backward: ["is after", "comes after"],
     equal: ["is at the same time as", "occurs simultaneously with"],
     minimal: { forward: "→", backward: "←", equal: "=" },
+  },
+  distance: {
+    forward: ["is farther than", "is more distant than"],
+    backward: ["is closer than", "is nearer than"],
+    equal: ["is the same distance as", "is equidistant with"],
+    minimal: { forward: "📏>", backward: "<📏", equal: "=" },
+  },
+  depth: {
+    forward: ["is deeper than"],
+    backward: ["is shallower than"],
+    equal: ["is the same depth as"],
+    minimal: { forward: "🌊>", backward: "<🌊", equal: "=" },
+  },
+  width: {
+    forward: ["is wider than", "is broader than"],
+    backward: ["is narrower than"],
+    equal: ["is the same width as"],
+    minimal: { forward: "↔>", backward: "<↔", equal: "=" },
+  },
+  length: {
+    forward: ["is longer than"],
+    backward: ["is shorter than"],
+    equal: ["is the same length as"],
+    minimal: { forward: "↕>", backward: "<↕", equal: "=" },
+  },
+  volume: {
+    forward: ["is louder than"],
+    backward: ["is quieter than", "is softer than"],
+    equal: ["is the same volume as"],
+    minimal: { forward: "🔊>", backward: "<🔊", equal: "=" },
+  },
+  density: {
+    forward: ["is denser than", "is more dense than"],
+    backward: ["is less dense than"],
+    equal: ["has the same density as"],
+    minimal: { forward: "⚛>", backward: "<⚛", equal: "=" },
+  },
+  hardness: {
+    forward: ["is harder than"],
+    backward: ["is softer than"],
+    equal: ["is as hard as"],
+    minimal: { forward: "💎>", backward: "<💎", equal: "=" },
+  },
+  cost: {
+    forward: ["is more expensive than", "costs more than"],
+    backward: ["is cheaper than", "costs less than"],
+    equal: ["costs the same as"],
+    minimal: { forward: "💰>", backward: "<💰", equal: "=" },
+  },
+  difficulty: {
+    forward: ["is harder than", "is more difficult than"],
+    backward: ["is easier than", "is less difficult than"],
+    equal: ["is as difficult as"],
+    minimal: { forward: "🎯>", backward: "<🎯", equal: "=" },
+  },
+  strength: {
+    forward: ["is stronger than"],
+    backward: ["is weaker than"],
+    equal: ["is as strong as"],
+    minimal: { forward: "💪>", backward: "<💪", equal: "=" },
+  },
+  power: {
+    forward: ["is more powerful than"],
+    backward: ["is less powerful than"],
+    equal: ["is as powerful as"],
+    minimal: { forward: "⚡>", backward: "<⚡", equal: "=" },
+  },
+  value: {
+    forward: ["is more valuable than"],
+    backward: ["is less valuable than"],
+    equal: ["is as valuable as"],
+    minimal: { forward: "💎>", backward: "<💎", equal: "=" },
+  },
+  quality: {
+    forward: ["is better than", "is of higher quality than"],
+    backward: ["is worse than", "is of lower quality than"],
+    equal: ["is as good as", "is of equal quality to"],
+    minimal: { forward: "⭐>", backward: "<⭐", equal: "=" },
+  },
+  rank: {
+    forward: ["is higher ranked than", "outranks"],
+    backward: ["is lower ranked than", "is outranked by"],
+    equal: ["is ranked the same as"],
+    minimal: { forward: "🏆>", backward: "<🏆", equal: "=" },
+  },
+  quantity: {
+    forward: ["has more than"],
+    backward: ["has fewer than", "has less than"],
+    equal: ["has the same quantity as"],
+    minimal: { forward: "#>", backward: "<#", equal: "=" },
+  },
+  latency: {
+    forward: ["has higher latency than", "has more latency than"],
+    backward: ["has lower latency than", "has less latency than"],
+    equal: ["has the same latency as"],
+    minimal: { forward: "⏱>", backward: "<⏱", equal: "=" },
+  },
+  throughput: {
+    forward: ["has higher throughput than", "has more throughput than"],
+    backward: ["has lower throughput than", "has less throughput than"],
+    equal: ["has the same throughput as"],
+    minimal: { forward: "📊>", backward: "<📊", equal: "=" },
+  },
+  availability: {
+    forward: ["is more available than", "has higher availability than"],
+    backward: ["is less available than", "has lower availability than"],
+    equal: ["has the same availability as"],
+    minimal: { forward: "✅>", backward: "<✅", equal: "=" },
+  },
+  error_rate: {
+    forward: ["has a higher error rate than", "has more errors than"],
+    backward: ["has a lower error rate than", "has fewer errors than"],
+    equal: ["has the same error rate as"],
+    minimal: { forward: "❌>", backward: "<❌", equal: "=" },
+  },
+  reliability: {
+    forward: ["is more reliable than"],
+    backward: ["is less reliable than"],
+    equal: ["is as reliable as"],
+    minimal: { forward: "🔧>", backward: "<🔧", equal: "=" },
   },
 };
 
@@ -176,7 +296,13 @@ export function getSpatialText(relation, minimal = false) {
     SPATIAL_VOCABULARIES[dimensions]?.[style] ||
     SPATIAL_VOCABULARIES[2].cardinal;
 
-  const key = JSON.stringify(vector);
+  // Normalize vector for vocabulary lookup (vectors may be raw for inference)
+  const normalizedVector = vector.map((v) => {
+    if (v === 0) return 0;
+    return v / Math.abs(v);
+  });
+
+  const key = JSON.stringify(normalizedVector);
   const options = vocab[key];
 
   if (!options || options.length === 0) {
