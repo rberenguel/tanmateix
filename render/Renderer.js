@@ -1,4 +1,4 @@
-import { getRelationText } from './Vocabulary.js';
+import { getRelationText } from "./Vocabulary.js";
 
 /**
  * Renderer converts Question objects to styled HTML
@@ -9,7 +9,7 @@ export class Renderer {
     this.options = {
       minimal: options.minimal || false,
       showEntities: options.showEntities !== false,
-      ...options
+      ...options,
     };
   }
 
@@ -20,10 +20,10 @@ export class Renderer {
    */
   renderQuestion(question) {
     return {
-      premises: question.premises.map(p => this.renderPremise(p)),
+      premises: question.premises.map((p) => this.renderPremise(p)),
       conclusion: this.renderConclusion(question.conclusion),
       isValid: question.isValid,
-      metadata: question.metadata
+      metadata: question.metadata,
     };
   }
 
@@ -33,7 +33,8 @@ export class Renderer {
   renderPremise(premise) {
     const [entityA, entityB] = premise.entities;
     // Use stored text if available, otherwise fall back to getRelationText
-    const relationText = premise.properties.text || getRelationText(premise, this.options.minimal);
+    const relationText =
+      premise.properties.text || getRelationText(premise, this.options.minimal);
 
     return `<div class="premise">
       <span class="entity">${this.escapeHtml(entityA.displayValue)}</span>
@@ -48,7 +49,9 @@ export class Renderer {
   renderConclusion(conclusion) {
     const [entityA, entityB] = conclusion.entities;
     // Use stored text if available, otherwise fall back to getRelationText
-    const relationText = conclusion.properties.text || getRelationText(conclusion, this.options.minimal);
+    const relationText =
+      conclusion.properties.text ||
+      getRelationText(conclusion, this.options.minimal);
 
     return `<div class="conclusion">
       <span class="entity">${this.escapeHtml(entityA.displayValue)}</span>
@@ -66,18 +69,18 @@ export class Renderer {
     const premiseCount = question.premises.length;
 
     // Determine compactness level based on premise count
-    let compactClass = '';
+    let compactClass = "";
     if (premiseCount >= 7) {
-      compactClass = 'very-compact';
+      compactClass = "very-compact";
     } else if (premiseCount >= 5) {
-      compactClass = 'compact';
+      compactClass = "compact";
     }
 
     return `
       <div class="logic-game ${compactClass}">
         <div class="premises-container">
           <div class="premises-label">Premises:</div>
-          ${rendered.premises.join('')}
+          ${rendered.premises.join("")}
         </div>
 
         <div class="conclusion-container">
@@ -105,7 +108,7 @@ export class Renderer {
             <span class="stat-label">Entities:</span>
             <span class="stat-value">${question.metadata.entityCount}</span>
           </div>
-          ${question.metadata.isMixed ? '<div class="stat-badge">Mixed Types</div>' : ''}
+          ${question.metadata.isMixed ? '<div class="stat-badge">Mixed Types</div>' : ""}
         </div>
       </div>
     `;
@@ -118,7 +121,7 @@ export class Renderer {
     const stats = question.network.getStats();
     const types = Object.entries(stats.relationsByType)
       .map(([type, count]) => `${type}: ${count}`)
-      .join(', ');
+      .join(", ");
 
     return `
       <div class="network-info">
@@ -142,7 +145,7 @@ export class Renderer {
    * Escape HTML to prevent XSS
    */
   escapeHtml(text) {
-    const div = document.createElement('div');
+    const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
   }

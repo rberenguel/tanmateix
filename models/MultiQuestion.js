@@ -37,8 +37,8 @@ export class MultiQuestion {
    */
   toJSON() {
     return {
-      questions: this.questions.map(q => q.toJSON()),
-      timestamp: this.timestamp
+      questions: this.questions.map((q) => q.toJSON()),
+      timestamp: this.timestamp,
     };
   }
 }

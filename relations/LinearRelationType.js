@@ -1,5 +1,5 @@
-import { RelationType } from '../core/RelationType.js';
-import { Relation } from '../core/Relation.js';
+import { RelationType } from "../core/RelationType.js";
+import { Relation } from "../core/Relation.js";
 
 /**
  * LinearRelationType handles all ordered comparisons (size, speed, brightness, etc.)
@@ -11,7 +11,7 @@ import { Relation } from '../core/Relation.js';
  */
 export class LinearRelationType extends RelationType {
   constructor() {
-    super('Linear');
+    super("Linear");
   }
 
   /**
@@ -27,10 +27,12 @@ export class LinearRelationType extends RelationType {
    * Validate relation
    */
   validate(relation) {
-    return relation.entities.length === 2 &&
-           typeof relation.properties.direction === 'number' &&
-           [-1, 0, 1].includes(relation.properties.direction) &&
-           typeof relation.properties.dimension === 'string';
+    return (
+      relation.entities.length === 2 &&
+      typeof relation.properties.direction === "number" &&
+      [-1, 0, 1].includes(relation.properties.direction) &&
+      typeof relation.properties.dimension === "string"
+    );
   }
 
   /**
@@ -39,12 +41,12 @@ export class LinearRelationType extends RelationType {
   inverse(relation) {
     const newProps = {
       ...relation.properties,
-      direction: -relation.properties.direction
+      direction: -relation.properties.direction,
     };
     return new Relation(
       this,
       [relation.entities[1], relation.entities[0]],
-      newProps
+      newProps,
     );
   }
 
@@ -84,15 +86,16 @@ export class LinearRelationType extends RelationType {
 
         // Check if r1.end === r2.start (chainable)
         if (r1.entities[1].id === r2.entities[0].id) {
-          if (r1.properties.direction === r2.properties.direction &&
-              r1.properties.direction !== 0) {
-            inferred.push(this.createRelation(
-              [r1.entities[0], r2.entities[1]],
-              {
+          if (
+            r1.properties.direction === r2.properties.direction &&
+            r1.properties.direction !== 0
+          ) {
+            inferred.push(
+              this.createRelation([r1.entities[0], r2.entities[1]], {
                 direction: r1.properties.direction,
-                dimension: r1.properties.dimension
-              }
-            ));
+                dimension: r1.properties.dimension,
+              }),
+            );
           }
         }
       }
@@ -105,10 +108,12 @@ export class LinearRelationType extends RelationType {
    * Check if two relations have same entities (in any order)
    */
   sameEntities(rel1, rel2) {
-    return (rel1.entities[0].id === rel2.entities[0].id &&
-            rel1.entities[1].id === rel2.entities[1].id) ||
-           (rel1.entities[0].id === rel2.entities[1].id &&
-            rel1.entities[1].id === rel2.entities[0].id);
+    return (
+      (rel1.entities[0].id === rel2.entities[0].id &&
+        rel1.entities[1].id === rel2.entities[1].id) ||
+      (rel1.entities[0].id === rel2.entities[1].id &&
+        rel1.entities[1].id === rel2.entities[0].id)
+    );
   }
 
   /**

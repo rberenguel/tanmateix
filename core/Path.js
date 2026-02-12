@@ -40,8 +40,8 @@ export class Path {
    */
   generateRelations() {
     const relations = [];
-    const isSpatial = this.relationType.name === 'Spatial';
-    const isCategorical = this.relationType.name === 'Categorical';
+    const isSpatial = this.relationType.name === "Spatial";
+    const isCategorical = this.relationType.name === "Categorical";
 
     // For linear: force variety in 2-premise questions
     // First edge gets random phrasing, second gets opposite
@@ -61,19 +61,33 @@ export class Path {
 
         // Get text from vocab set for this specific vector
         const vocabSet = this.vocabulary.vocabSet;
-        const text = vocabSet[vectorKey] ? vocabSet[vectorKey][0] : 'relates to';
+        const text = vocabSet[vectorKey]
+          ? vocabSet[vectorKey][0]
+          : "relates to";
 
         // Store vector for this edge
         this.pathProperties.edgeVectors.push(vector);
 
         // Create relation: "B is [direction] of A" (entityB relative to entityA)
-        const relation = this.createRelationWithVector(entityB, entityA, text, vector);
+        const relation = this.createRelationWithVector(
+          entityB,
+          entityA,
+          text,
+          vector,
+        );
         relations.push(relation);
       } else if (isCategorical) {
         // Categorical: Randomly pick "same" or "different" for each edge
         const useSame = Math.random() < 0.5;
-        const text = useSame ? this.vocabulary.forward : this.vocabulary.backward;
-        const relation = this.createRelation(entityA, entityB, text, useSame ? 1 : -1);
+        const text = useSame
+          ? this.vocabulary.forward
+          : this.vocabulary.backward;
+        const relation = this.createRelation(
+          entityA,
+          entityB,
+          text,
+          useSame ? 1 : -1,
+        );
         relations.push(relation);
       } else {
         // Linear: Vary phrasing to avoid repetition
@@ -97,10 +111,20 @@ export class Path {
         let relation;
         if (useForwardPhrasing) {
           // Forward: "A is less than B" (A < B in logical order)
-          relation = this.createRelation(entityA, entityB, this.vocabulary.forward, 1);
+          relation = this.createRelation(
+            entityA,
+            entityB,
+            this.vocabulary.forward,
+            1,
+          );
         } else {
           // Backward: "B is more than A" (same logical relationship, entities swapped)
-          relation = this.createRelation(entityB, entityA, this.vocabulary.backward, -1);
+          relation = this.createRelation(
+            entityB,
+            entityA,
+            this.vocabulary.backward,
+            -1,
+          );
         }
 
         relations.push(relation);
@@ -117,8 +141,8 @@ export class Path {
     // Create relation with semantic properties (for validation) AND text (for rendering)
     const properties = {
       ...this.pathProperties,
-      direction: direction,  // Semantic property for validation
-      text: text            // Actual text for rendering
+      direction: direction, // Semantic property for validation
+      text: text, // Actual text for rendering
     };
 
     return this.relationType.createRelation([fromEntity, toEntity], properties);
@@ -132,14 +156,17 @@ export class Path {
       return null;
     }
 
-    const isSpatial = this.relationType.name === 'Spatial';
+    const isSpatial = this.relationType.name === "Spatial";
 
     if (isSpatial) {
       // Spatial: Sum all edge vectors to get inferred vector
       const edgeVectors = this.pathProperties.edgeVectors;
-      const sumVector = edgeVectors.reduce((acc, vec) => {
-        return acc.map((v, i) => v + vec[i]);
-      }, [0, 0]);
+      const sumVector = edgeVectors.reduce(
+        (acc, vec) => {
+          return acc.map((v, i) => v + vec[i]);
+        },
+        [0, 0],
+      );
 
       // Normalize the result
       const inferredVector = this.normalize(sumVector);
@@ -147,14 +174,14 @@ export class Path {
 
       // Get text for inferred vector
       const vocabSet = this.vocabulary.vocabSet;
-      const text = vocabSet[vectorKey] ? vocabSet[vectorKey][0] : 'relates to';
+      const text = vocabSet[vectorKey] ? vocabSet[vectorKey][0] : "relates to";
 
       // "C is [direction] of A"
       return this.createRelationWithVector(
         this.entities[this.entities.length - 1],
         this.entities[0],
         text,
-        inferredVector
+        inferredVector,
       );
     } else {
       // Linear: Can phrase either way (randomly chosen)
@@ -166,7 +193,7 @@ export class Path {
           this.entities[0],
           this.entities[this.entities.length - 1],
           this.vocabulary.forward,
-          1
+          1,
         );
       } else {
         // "C is more than A" (direction: -1 = backward)
@@ -174,7 +201,7 @@ export class Path {
           this.entities[this.entities.length - 1],
           this.entities[0],
           this.vocabulary.backward,
-          -1
+          -1,
         );
       }
     }
@@ -205,7 +232,7 @@ export class Path {
       ...this.pathProperties,
       text: text,
       vector: vector,
-      direction: 1 // For validation
+      direction: 1, // For validation
     };
 
     return this.relationType.createRelation([fromEntity, toEntity], properties);
@@ -215,7 +242,7 @@ export class Path {
    * Normalize vector
    */
   normalize(vector) {
-    return vector.map(v => {
+    return vector.map((v) => {
       if (v === 0) return 0;
       return v / Math.abs(v);
     });

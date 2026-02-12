@@ -11,7 +11,9 @@
  */
 export class SpatialGrid {
   constructor() {
-    this.grid = Array(3).fill(null).map(() => Array(3).fill(null));
+    this.grid = Array(3)
+      .fill(null)
+      .map(() => Array(3).fill(null));
     this.centerPosition = [1, 1]; // Center of grid
     this.entityPositions = new Map(); // entity.id -> [x, y]
   }
@@ -41,7 +43,7 @@ export class SpatialGrid {
    */
   placeEntitiesRandomly(entities) {
     if (entities.length > 9) {
-      throw new Error('Cannot place more than 9 entities on 3x3 grid');
+      throw new Error("Cannot place more than 9 entities on 3x3 grid");
     }
 
     // Place first entity in center for clarity
@@ -75,13 +77,13 @@ export class SpatialGrid {
     const toPos = this.entityPositions.get(toEntity.id);
 
     if (!fromPos || !toPos) {
-      throw new Error('Entity not found in grid');
+      throw new Error("Entity not found in grid");
     }
 
     // Calculate raw vector (difference in positions)
     const rawVector = [
       toPos[0] - fromPos[0], // x difference
-      toPos[1] - fromPos[1]  // y difference
+      toPos[1] - fromPos[1], // y difference
     ];
 
     // Normalize to [-1, 0, 1]
@@ -99,7 +101,7 @@ export class SpatialGrid {
    * Normalize a vector to [-1, 0, 1] in each dimension
    */
   normalize(vector) {
-    return vector.map(v => {
+    return vector.map((v) => {
       if (v === 0) return 0;
       return v / Math.abs(v);
     });
@@ -119,7 +121,7 @@ export class SpatialGrid {
    * Get a visual representation of the grid (for debugging)
    */
   toString() {
-    let result = 'Grid (y increases upward):\n';
+    let result = "Grid (y increases upward):\n";
     for (let y = 2; y >= 0; y--) {
       const row = [];
       for (let x = 0; x < 3; x++) {
@@ -127,10 +129,10 @@ export class SpatialGrid {
         if (entity) {
           row.push(entity.displayValue.substring(0, 5).padEnd(5));
         } else {
-          row.push('  .  ');
+          row.push("  .  ");
         }
       }
-      result += row.join(' ') + '\n';
+      result += row.join(" ") + "\n";
     }
     return result;
   }

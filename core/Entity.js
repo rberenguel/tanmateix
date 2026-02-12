@@ -19,7 +19,7 @@ export class Entity {
   toJSON() {
     return {
       id: this.id,
-      displayValue: this.displayValue
+      displayValue: this.displayValue,
     };
   }
 

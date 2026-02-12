@@ -1,7 +1,7 @@
-import { Question } from '../models/Question.js';
-import { MultiQuestion } from '../models/MultiQuestion.js';
-import { PremiseNetworkGenerator } from './PremiseNetworkGenerator.js';
-import { ConclusionGenerator } from './ConclusionGenerator.js';
+import { Question } from "../models/Question.js";
+import { MultiQuestion } from "../models/MultiQuestion.js";
+import { PremiseNetworkGenerator } from "./PremiseNetworkGenerator.js";
+import { ConclusionGenerator } from "./ConclusionGenerator.js";
 
 /**
  * QuestionGenerator orchestrates the entire question generation process.
@@ -42,7 +42,7 @@ export class QuestionGenerator {
         const relationSpecs = this.buildRelationSpecs(
           spec.premiseCount,
           spec.relationTypes,
-          spec.mixedTypes
+          spec.mixedTypes,
         );
 
         // Generate network
@@ -50,7 +50,7 @@ export class QuestionGenerator {
           entityCount: spec.premiseCount + 1,
           relationSpecs,
           branchingFactor: spec.branchingFactor || 0.3,
-          allowInference: true
+          allowInference: true,
         });
 
         // Get only the original premises (not inferred relations)
@@ -59,11 +59,14 @@ export class QuestionGenerator {
 
         // Generate conclusion
         // For 2-premise questions, force inferred-only to avoid trivial questions
-        const conclusion = this.conclusionGenerator.generateConclusion(network, {
-          relationType: spec.conclusionType || null,
-          strategy: 'random',
-          inferredOnly: spec.premiseCount === 2
-        });
+        const conclusion = this.conclusionGenerator.generateConclusion(
+          network,
+          {
+            relationType: spec.conclusionType || null,
+            strategy: "random",
+            inferredOnly: spec.premiseCount === 2,
+          },
+        );
 
         // Build question object
         return new Question({
@@ -76,13 +79,15 @@ export class QuestionGenerator {
             entityCount: network.entities.size,
             relationTypes: this.getRelationTypeNames(originalPremises),
             conclusionStrategy: conclusion.strategy,
-            isMixed: this.isMixedTypes(originalPremises)
-          }
+            isMixed: this.isMixedTypes(originalPremises),
+          },
         });
       } catch (e) {
         // If no inferred relations available, retry
         if (attempt === maxAttempts - 1) {
-          throw new Error(`Failed to generate valid question after ${maxAttempts} attempts: ${e.message}`);
+          throw new Error(
+            `Failed to generate valid question after ${maxAttempts} attempts: ${e.message}`,
+          );
         }
         // Otherwise, continue to next attempt
       }
@@ -106,14 +111,14 @@ export class QuestionGenerator {
     const relationSpecs = this.buildRelationSpecs(
       spec.premiseCount,
       spec.relationTypes,
-      spec.mixedTypes
+      spec.mixedTypes,
     );
 
     const network = this.networkGenerator.generate({
       entityCount: spec.premiseCount + 1,
       relationSpecs,
       branchingFactor: spec.branchingFactor || 0.4,
-      allowInference: true
+      allowInference: true,
     });
 
     // Generate multiple conclusions
@@ -123,24 +128,26 @@ export class QuestionGenerator {
     for (let i = 0; i < questionCount; i++) {
       const conclusion = this.conclusionGenerator.generateConclusion(network, {
         relationType: spec.conclusionTypes ? spec.conclusionTypes[i] : null,
-        strategy: 'random'
+        strategy: "random",
       });
 
-      questions.push(new Question({
-        network,
-        premises: network.relations,
-        conclusion: conclusion.relation,
-        isValid: conclusion.isValid,
-        metadata: {
-          premiseCount: network.relations.length,
-          entityCount: network.entities.size,
-          relationTypes: this.getRelationTypeNames(network.relations),
-          conclusionStrategy: conclusion.strategy,
-          isMixed: this.isMixedTypes(network.relations),
-          questionIndex: i,
-          totalQuestions: questionCount
-        }
-      }));
+      questions.push(
+        new Question({
+          network,
+          premises: network.relations,
+          conclusion: conclusion.relation,
+          isValid: conclusion.isValid,
+          metadata: {
+            premiseCount: network.relations.length,
+            entityCount: network.entities.size,
+            relationTypes: this.getRelationTypeNames(network.relations),
+            conclusionStrategy: conclusion.strategy,
+            isMixed: this.isMixedTypes(network.relations),
+            questionIndex: i,
+            totalQuestions: questionCount,
+          },
+        }),
+      );
     }
 
     return new MultiQuestion(network, questions);
@@ -152,11 +159,13 @@ export class QuestionGenerator {
   buildRelationSpecs(premiseCount, relationTypes, mixedTypes) {
     if (!mixedTypes || relationTypes.length === 1) {
       // Single type
-      return [{
-        type: relationTypes[0].type,
-        count: premiseCount,
-        weight: 1
-      }];
+      return [
+        {
+          type: relationTypes[0].type,
+          count: premiseCount,
+          weight: 1,
+        },
+      ];
     }
 
     // Mixed types - distribute premises
@@ -169,7 +178,7 @@ export class QuestionGenerator {
       specs.push({
         type: rt.type,
         count,
-        weight: rt.weight
+        weight: rt.weight,
       });
     }
 

@@ -48,8 +48,8 @@ export class Relation {
   toJSON() {
     return {
       type: this.type.name,
-      entities: this.entities.map(e => e.toJSON()),
-      properties: this.properties
+      entities: this.entities.map((e) => e.toJSON()),
+      properties: this.properties,
     };
   }
 }

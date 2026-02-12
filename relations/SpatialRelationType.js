@@ -1,5 +1,5 @@
-import { RelationType } from '../core/RelationType.js';
-import { Relation } from '../core/Relation.js';
+import { RelationType } from "../core/RelationType.js";
+import { Relation } from "../core/Relation.js";
 
 /**
  * SpatialRelationType handles directional/positional relationships in N-dimensional space.
@@ -16,7 +16,7 @@ export class SpatialRelationType extends RelationType {
    * @param {number} dimensions - Number of dimensions (2, 3, or 4)
    */
   constructor(dimensions = 2) {
-    super('Spatial');
+    super("Spatial");
     this.dimensions = dimensions;
   }
 
@@ -33,25 +33,23 @@ export class SpatialRelationType extends RelationType {
    * Validate relation
    */
   validate(relation) {
-    return relation.entities.length === 2 &&
-           Array.isArray(relation.properties.vector) &&
-           relation.properties.vector.length === this.dimensions &&
-           relation.properties.vector.every(v => [-1, 0, 1].includes(v));
+    return (
+      relation.entities.length === 2 &&
+      Array.isArray(relation.properties.vector) &&
+      relation.properties.vector.length === this.dimensions &&
+      relation.properties.vector.every((v) => [-1, 0, 1].includes(v))
+    );
   }
 
   /**
    * Get inverse relation (invert vector and swap entities)
    */
   inverse(relation) {
-    const invertedVector = relation.properties.vector.map(v => -v);
-    return new Relation(
-      this,
-      [relation.entities[1], relation.entities[0]],
-      {
-        vector: invertedVector,
-        vocabStyle: relation.properties.vocabStyle // Preserve vocabulary style
-      }
-    );
+    const invertedVector = relation.properties.vector.map((v) => -v);
+    return new Relation(this, [relation.entities[1], relation.entities[0]], {
+      vector: invertedVector,
+      vocabStyle: relation.properties.vocabStyle, // Preserve vocabulary style
+    });
   }
 
   /**
@@ -93,19 +91,18 @@ export class SpatialRelationType extends RelationType {
         // Check if chainable (r1.end === r2.start)
         if (r1.entities[1].id === r2.entities[0].id) {
           const sumVector = r1.properties.vector.map(
-            (v, idx) => v + r2.properties.vector[idx]
+            (v, idx) => v + r2.properties.vector[idx],
           );
 
           // Normalize the result
           const normalized = this.normalize(sumVector);
 
-          inferred.push(this.createRelation(
-            [r1.entities[0], r2.entities[1]],
-            {
+          inferred.push(
+            this.createRelation([r1.entities[0], r2.entities[1]], {
               vector: normalized,
-              vocabStyle: r1.properties.vocabStyle // Preserve vocabulary style from first relation
-            }
-          ));
+              vocabStyle: r1.properties.vocabStyle, // Preserve vocabulary style from first relation
+            }),
+          );
         }
       }
     }
@@ -117,7 +114,7 @@ export class SpatialRelationType extends RelationType {
    * Normalize vector to -1, 0, or 1 in each dimension
    */
   normalize(vector) {
-    return vector.map(v => {
+    return vector.map((v) => {
       if (v === 0) return 0;
       return v / Math.abs(v);
     });
@@ -134,9 +131,11 @@ export class SpatialRelationType extends RelationType {
    * Check if two relations have same entities (in any order)
    */
   sameEntities(rel1, rel2) {
-    return (rel1.entities[0].id === rel2.entities[0].id &&
-            rel1.entities[1].id === rel2.entities[1].id) ||
-           (rel1.entities[0].id === rel2.entities[1].id &&
-            rel1.entities[1].id === rel2.entities[0].id);
+    return (
+      (rel1.entities[0].id === rel2.entities[0].id &&
+        rel1.entities[1].id === rel2.entities[1].id) ||
+      (rel1.entities[0].id === rel2.entities[1].id &&
+        rel1.entities[1].id === rel2.entities[0].id)
+    );
   }
 }

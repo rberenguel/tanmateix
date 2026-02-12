@@ -7,16 +7,29 @@
  */
 
 // Core classes
-export { Entity, Relation, RelationType, PremiseNetwork } from './core/index.js';
+export {
+  Entity,
+  Relation,
+  RelationType,
+  PremiseNetwork,
+} from "./core/index.js";
 
 // Relation types
-export { LinearRelationType, SpatialRelationType, CategoricalRelationType } from './relations/index.js';
+export {
+  LinearRelationType,
+  SpatialRelationType,
+  CategoricalRelationType,
+} from "./relations/index.js";
 
 // Utils
-export { RandomUtils, EntityFactory } from './utils/index.js';
+export { RandomUtils, EntityFactory } from "./utils/index.js";
 
 // Models
-export { Question, MultiQuestion } from './models/index.js';
+export { Question, MultiQuestion } from "./models/index.js";
 
 // Generators
-export { PremiseNetworkGenerator, ConclusionGenerator, QuestionGenerator } from './generators/index.js';
+export {
+  PremiseNetworkGenerator,
+  ConclusionGenerator,
+  QuestionGenerator,
+} from "./generators/index.js";

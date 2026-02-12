@@ -4,9 +4,9 @@
  */
 export class PremiseNetwork {
   constructor() {
-    this.entities = new Map();     // id -> Entity
-    this.relations = [];           // Array of Relation instances
-    this.adjacency = new Map();    // id -> Set of related entity ids
+    this.entities = new Map(); // id -> Entity
+    this.relations = []; // Array of Relation instances
+    this.adjacency = new Map(); // id -> Set of related entity ids
   }
 
   /**
@@ -28,13 +28,13 @@ export class PremiseNetwork {
   addRelation(relation) {
     // Validate before adding
     if (!relation.validate()) {
-      throw new Error('Invalid relation');
+      throw new Error("Invalid relation");
     }
 
     // Check for contradictions
     for (const existing of this.relations) {
       if (relation.contradicts(existing)) {
-        throw new Error('Relation contradicts existing relation');
+        throw new Error("Relation contradicts existing relation");
       }
     }
 
@@ -55,8 +55,8 @@ export class PremiseNetwork {
    * @returns {Relation[]}
    */
   getRelationsFor(entityId) {
-    return this.relations.filter(rel =>
-      rel.entities.some(e => e.id === entityId)
+    return this.relations.filter((rel) =>
+      rel.entities.some((e) => e.id === entityId),
     );
   }
 
@@ -66,7 +66,7 @@ export class PremiseNetwork {
    * @returns {Relation[]}
    */
   getRelationsByType(relationType) {
-    return this.relations.filter(rel => rel.type === relationType);
+    return this.relations.filter((rel) => rel.type === relationType);
   }
 
   /**
@@ -76,10 +76,13 @@ export class PremiseNetwork {
    * @returns {Relation|null}
    */
   getRelationBetween(entityId1, entityId2) {
-    return this.relations.find(rel =>
-      rel.entities.some(e => e.id === entityId1) &&
-      rel.entities.some(e => e.id === entityId2)
-    ) || null;
+    return (
+      this.relations.find(
+        (rel) =>
+          rel.entities.some((e) => e.id === entityId1) &&
+          rel.entities.some((e) => e.id === entityId2),
+      ) || null
+    );
   }
 
   /**
@@ -90,11 +93,14 @@ export class PremiseNetwork {
    * @returns {Relation|null}
    */
   getRelationBetweenOfType(entityId1, entityId2, relationType) {
-    return this.relations.find(rel =>
-      rel.type === relationType &&
-      rel.entities.some(e => e.id === entityId1) &&
-      rel.entities.some(e => e.id === entityId2)
-    ) || null;
+    return (
+      this.relations.find(
+        (rel) =>
+          rel.type === relationType &&
+          rel.entities.some((e) => e.id === entityId1) &&
+          rel.entities.some((e) => e.id === entityId2),
+      ) || null
+    );
   }
 
   /**
@@ -170,10 +176,11 @@ export class PremiseNetwork {
       const newRels = type.infer(rels);
       for (const newRel of newRels) {
         // Only add if not already present
-        const exists = this.relations.some(r =>
-          r.type === newRel.type &&
-          r.entities[0].id === newRel.entities[0].id &&
-          r.entities[1].id === newRel.entities[1].id
+        const exists = this.relations.some(
+          (r) =>
+            r.type === newRel.type &&
+            r.entities[0].id === newRel.entities[0].id &&
+            r.entities[1].id === newRel.entities[1].id,
         );
         if (!exists) {
           inferred.push(newRel);
@@ -236,9 +243,10 @@ export class PremiseNetwork {
       entityCount: this.entities.size,
       relationCount: this.relations.length,
       relationsByType: Object.fromEntries(typeCount),
-      averageDegree: this.relations.length > 0
-        ? (this.relations.length * 2 / this.entities.size)
-        : 0,
+      averageDegree:
+        this.relations.length > 0
+          ? (this.relations.length * 2) / this.entities.size
+          : 0,
     };
   }
 
@@ -247,9 +255,9 @@ export class PremiseNetwork {
    */
   toJSON() {
     return {
-      entities: Array.from(this.entities.values()).map(e => e.toJSON()),
-      relations: this.relations.map(r => r.toJSON()),
-      stats: this.getStats()
+      entities: Array.from(this.entities.values()).map((e) => e.toJSON()),
+      relations: this.relations.map((r) => r.toJSON()),
+      stats: this.getStats(),
     };
   }
 }

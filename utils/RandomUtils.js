@@ -44,7 +44,7 @@ export class RandomUtils {
    */
   pickRandom(array) {
     if (array.length === 0) {
-      throw new Error('Cannot pick from empty array');
+      throw new Error("Cannot pick from empty array");
     }
     return array[Math.floor(this.random() * array.length)];
   }
@@ -57,7 +57,9 @@ export class RandomUtils {
    */
   pickRandomN(array, n) {
     if (n > array.length) {
-      throw new Error(`Cannot pick ${n} items from array of length ${array.length}`);
+      throw new Error(
+        `Cannot pick ${n} items from array of length ${array.length}`,
+      );
     }
 
     const copy = [...array];
@@ -79,7 +81,7 @@ export class RandomUtils {
    */
   weightedPick(items, weights) {
     if (items.length !== weights.length) {
-      throw new Error('Items and weights arrays must have same length');
+      throw new Error("Items and weights arrays must have same length");
     }
 
     const totalWeight = weights.reduce((sum, w) => sum + w, 0);

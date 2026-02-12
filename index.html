@@ -1,481 +1,592 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta name="description" content="A fast-paced logic puzzle game with progressive difficulty">
-    <meta name="theme-color" content="#000000">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
+    <meta
+      name="description"
+      content="A fast-paced logic puzzle game with progressive difficulty"
+    />
+    <meta name="theme-color" content="#000000" />
     <title>Tanmateix</title>
-    <link rel="stylesheet" href="render/logic.css">
-    <link rel="stylesheet" href="fonts/phosphor/phosphor.css">
-    <link rel="icon" href="favicon.ico">
-    <link rel="apple-touch-icon" href="icon.png">
-    <link rel="manifest" href="manifest.json">
-</head>
-<body>
-
-<header>
-    <div class="header-top">
-        <div class="app-icon" style="display: flex; align-items: center; justify-content: center;">
-            <img src="icon.png" alt="App Icon" style="width: 60px; height: 60px;">
+    <link rel="stylesheet" href="render/logic.css" />
+    <link rel="stylesheet" href="fonts/phosphor/phosphor.css" />
+    <link rel="icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="icon.png" />
+    <link rel="manifest" href="manifest.json" />
+  </head>
+  <body>
+    <header>
+      <div class="header-top">
+        <div
+          class="app-icon"
+          style="display: flex; align-items: center; justify-content: center"
+        >
+          <img
+            src="icon.png"
+            alt="App Icon"
+            style="width: 60px; height: 60px"
+          />
         </div>
         <div class="header-info">
-            <div class="stats">
-                <span id="lbl-score">0</span> / <span id="lbl-total" style="color:var(--accent)">100</span>
-                <i class="ph-light ph-info info-icon" id="game-info-btn" title="Game info"></i>
-            </div>
-            <div class="meta-info">
-                Streak: <span id="lbl-streak" style="color: var(--gold);">0</span> •
-                L<span id="lbl-level">1</span>
-            </div>
+          <div class="stats">
+            <span id="lbl-score">0</span> /
+            <span id="lbl-total" style="color: var(--accent)">100</span>
+            <i
+              class="ph-light ph-info info-icon"
+              id="game-info-btn"
+              title="Game info"
+            ></i>
+          </div>
+          <div class="meta-info">
+            Streak: <span id="lbl-streak" style="color: var(--gold)">0</span> •
+            L<span id="lbl-level">1</span>
+          </div>
         </div>
-    </div>
-    <div class="progress-container">
+      </div>
+      <div class="progress-container">
         <div id="progress" class="progress-bar" style="width: 0%"></div>
-    </div>
-</header>
+      </div>
+    </header>
 
-<div id="game-container"></div>
+    <div id="game-container"></div>
 
-<!-- Start Screen -->
-<div id="start-screen" class="pause-overlay visible">
-    <div class="pause-content">
-        <img src="icon.png" alt="Tanmateix" style="width: 100px; height: 100px; border-radius: 20px; margin-bottom: 20px;">
-        <h1 style="font-size: 3rem; margin-bottom: 10px; color: var(--accent);">Tanmateix</h1>
-        <p style="opacity: 0.8; margin-bottom: 20px;">Fast-paced logic reasoning</p>
-        <ul style="max-width: 450px; line-height: 1.8; margin-bottom: 30px; opacity: 0.9; text-align: left; list-style: none; padding: 0;">
-            <li style="margin-bottom: 8px;">• Read premises about entities and their relationships</li>
-            <li style="margin-bottom: 8px;">• Evaluate if the conclusion logically follows</li>
-            <li style="margin-bottom: 8px;">• Answer <strong>True</strong> or <strong>False</strong> before time runs out</li>
+    <!-- Start Screen -->
+    <div id="start-screen" class="pause-overlay visible">
+      <div class="pause-content">
+        <img
+          src="icon.png"
+          alt="Tanmateix"
+          style="
+            width: 100px;
+            height: 100px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+          "
+        />
+        <h1 style="font-size: 3rem; margin-bottom: 10px; color: var(--accent)">
+          Tanmateix
+        </h1>
+        <p style="opacity: 0.8; margin-bottom: 20px">
+          Fast-paced logic reasoning
+        </p>
+        <ul
+          style="
+            max-width: 450px;
+            line-height: 1.8;
+            margin-bottom: 30px;
+            opacity: 0.9;
+            text-align: left;
+            list-style: none;
+            padding: 0;
+          "
+        >
+          <li style="margin-bottom: 8px">
+            • Read premises about entities and their relationships
+          </li>
+          <li style="margin-bottom: 8px">
+            • Evaluate if the conclusion logically follows
+          </li>
+          <li style="margin-bottom: 8px">
+            • Answer <strong>True</strong> or <strong>False</strong> before time
+            runs out
+          </li>
         </ul>
         <button id="start-btn" class="resume-btn">Start Game</button>
-        <p style="margin-top: 20px; opacity: 0.6; font-size: 0.9rem;">100 questions • Progressive difficulty • Beat the clock</p>
+        <p style="margin-top: 20px; opacity: 0.6; font-size: 0.9rem">
+          100 questions • Progressive difficulty • Beat the clock
+        </p>
+      </div>
     </div>
-</div>
 
-<!-- Pause Overlay -->
-<div id="pause-overlay" class="pause-overlay">
-    <div class="pause-content">
-        <h1 style="font-size: 3rem; margin-bottom: 20px; color: var(--accent);">PAUSED</h1>
+    <!-- Pause Overlay -->
+    <div id="pause-overlay" class="pause-overlay">
+      <div class="pause-content">
+        <h1 style="font-size: 3rem; margin-bottom: 20px; color: var(--accent)">
+          PAUSED
+        </h1>
         <button id="resume-btn" class="resume-btn">Resume</button>
-        <p style="margin-top: 20px; opacity: 0.7;">Press Space or click Resume to continue</p>
+        <p style="margin-top: 20px; opacity: 0.7">
+          Press Space or click Resume to continue
+        </p>
+      </div>
     </div>
-</div>
 
-<div id="debug-info" style="display: none;"></div>
+    <div id="debug-info" style="display: none"></div>
 
-<!-- Info Modal -->
-<div id="info-modal" class="modal-overlay">
-    <div class="modal-content">
+    <!-- Info Modal -->
+    <div id="info-modal" class="modal-overlay">
+      <div class="modal-content">
         <button class="modal-close" id="info-modal-close">&times;</button>
         <div class="modal-header">
-            <img src="icon.png" alt="Tanmateix" class="modal-icon">
-            <div class="modal-title-container">
-                <h2>About Tanmateix</h2>
-                <span class="version-tag" id="version-display">v...</span>
-            </div>
+          <img src="icon.png" alt="Tanmateix" class="modal-icon" />
+          <div class="modal-title-container">
+            <h2>About Tanmateix</h2>
+            <span class="version-tag" id="version-display">v...</span>
+          </div>
         </div>
         <div class="modal-text">
-            <p><strong>Tanmateix</strong> is a fast-paced logic puzzle game where you evaluate whether conclusions logically follow from given premises.</p>
+          <p>
+            <strong>Tanmateix</strong> is a fast-paced logic puzzle game where
+            you evaluate whether conclusions logically follow from given
+            premises.
+          </p>
 
-            <h3>How to Play</h3>
-            <p>You'll be presented with statements (premises) about entities and their relationships. Your task is to determine if the conclusion logically follows from the premises by selecting <strong>True</strong> or <strong>False</strong> before time runs out.</p>
+          <h3>How to Play</h3>
+          <p>
+            You'll be presented with statements (premises) about entities and
+            their relationships. Your task is to determine if the conclusion
+            logically follows from the premises by selecting
+            <strong>True</strong> or <strong>False</strong> before time runs
+            out.
+          </p>
 
-            <h3>Progressive Difficulty</h3>
-            <p>Every 10 correct answers in a row increases the difficulty by adding more paths, more entities, or reducing the time limit. Can you reach the maximum difficulty?</p>
+          <h3>Progressive Difficulty</h3>
+          <p>
+            Every 10 correct answers in a row increases the difficulty by adding
+            more paths, more entities, or reducing the time limit. Can you reach
+            the maximum difficulty?
+          </p>
 
-            <h3>Example</h3>
-            <p><em>Premise 1:</em> A is larger than B<br>
-            <em>Premise 2:</em> B is larger than C<br>
-            <em>Conclusion:</em> A is larger than C? <strong>True</strong></p>
+          <h3>Example</h3>
+          <p>
+            <em>Premise 1:</em> A is larger than B<br />
+            <em>Premise 2:</em> B is larger than C<br />
+            <em>Conclusion:</em> A is larger than C? <strong>True</strong>
+          </p>
 
-            <p>Challenge yourself through 100 questions with increasing complexity!</p>
+          <p>
+            Challenge yourself through 100 questions with increasing complexity!
+          </p>
 
-            <p class="source-link">Inspired by <a href="https://github.com/soamsy/Syllogimous-v3" target="_blank">Syllogimous-v3</a></p>
+          <p class="source-link">
+            Inspired by
+            <a href="https://github.com/soamsy/Syllogimous-v3" target="_blank"
+              >Syllogimous-v3</a
+            >
+          </p>
         </div>
+      </div>
     </div>
-</div>
 
-<script type="module">
-import { PathBasedQuestionGenerator } from './generators/PathBasedQuestionGenerator.js';
-import { RandomUtils } from './utils/RandomUtils.js';
-import { EntityFactory } from './utils/EntityFactory.js';
-import { Renderer } from './render/Renderer.js';
+    <script type="module">
+      import { PathBasedQuestionGenerator } from "./generators/PathBasedQuestionGenerator.js";
+      import { RandomUtils } from "./utils/RandomUtils.js";
+      import { EntityFactory } from "./utils/EntityFactory.js";
+      import { Renderer } from "./render/Renderer.js";
 
-// Game state
-const gameState = {
-    score: 0,
-    total: 100,
-    questionNumber: 1,
-    currentQuestion: null,
-    answered: false,
-    consecutiveCorrect: 0,
-    difficulty: {
-        numPaths: 1,
-        entitiesPerPath: 3,
-        timeLimit: 30
-    },
-    timer: null,
-    timeRemaining: 30,
-    isPaused: false
-};
+      // Game state
+      const gameState = {
+        score: 0,
+        total: 100,
+        questionNumber: 1,
+        currentQuestion: null,
+        answered: false,
+        consecutiveCorrect: 0,
+        difficulty: {
+          numPaths: 1,
+          entitiesPerPath: 3,
+          timeLimit: 30,
+        },
+        timer: null,
+        timeRemaining: 30,
+        isPaused: false,
+      };
 
-// Setup
-const random = new RandomUtils();
-const entityFactory = new EntityFactory({
-    useNonsenseWords: true,
-    nonsenseWordLength: 3
-}, random);
+      // Setup
+      const random = new RandomUtils();
+      const entityFactory = new EntityFactory(
+        {
+          useNonsenseWords: true,
+          nonsenseWordLength: 3,
+        },
+        random,
+      );
 
-const generator = new PathBasedQuestionGenerator({
-    entityFactory,
-    linearDimensions: ['size', 'speed', 'brightness', 'temperature', 'weight', 'height'],
-    random
-});
+      const generator = new PathBasedQuestionGenerator({
+        entityFactory,
+        linearDimensions: [
+          "size",
+          "speed",
+          "brightness",
+          "temperature",
+          "weight",
+          "height",
+        ],
+        random,
+      });
 
-const renderer = new Renderer();
+      const renderer = new Renderer();
 
-// Expose API for testing different configurations
-window.tanmateix = {
-    numPaths: 1, // Default to 1 path
-    entitiesPerPath: 3, // Default to 3 entities (= 2 premises per path)
-    generator: generator,
-    gameState: gameState,
+      // Expose API for testing different configurations
+      window.tanmateix = {
+        numPaths: 1, // Default to 1 path
+        entitiesPerPath: 3, // Default to 3 entities (= 2 premises per path)
+        generator: generator,
+        gameState: gameState,
 
-    // Generate a new question with current settings
-    newQuestion: () => {
-        const question = generator.generateMultiPathQuestion(
+        // Generate a new question with current settings
+        newQuestion: () => {
+          const question = generator.generateMultiPathQuestion(
             window.tanmateix.numPaths,
-            window.tanmateix.entitiesPerPath
+            window.tanmateix.entitiesPerPath,
+          );
+          gameState.currentQuestion = question;
+          gameState.answered = false;
+
+          // Render
+          const container = document.getElementById("game-container");
+          container.innerHTML = renderer.renderGameUI(question);
+
+          // Add event listeners to buttons
+          container.querySelectorAll(".btn").forEach((btn) => {
+            btn.addEventListener("click", handleAnswer);
+          });
+
+          // Update debug info
+          const debugInfo = document.getElementById("debug-info");
+          debugInfo.innerHTML = renderer.renderNetworkInfo(question);
+
+          return question;
+        },
+
+        // Quick test with different path counts
+        test2Path: () => {
+          window.tanmateix.numPaths = 2;
+          return window.tanmateix.newQuestion();
+        },
+        test3Path: () => {
+          window.tanmateix.numPaths = 3;
+          return window.tanmateix.newQuestion();
+        },
+        test4Path: () => {
+          window.tanmateix.numPaths = 4;
+          return window.tanmateix.newQuestion();
+        },
+
+        // Quick test with longer paths (more premises per path)
+        testLongPath: (entities = 5) => {
+          window.tanmateix.entitiesPerPath = entities;
+          window.tanmateix.numPaths = 1;
+          return window.tanmateix.newQuestion();
+        },
+
+        // Test spatial graph (fully-connected configuration)
+        testSpatialGraph: (entities = 3) => {
+          const question = generator.generateSpatialGraphQuestion(entities);
+          gameState.currentQuestion = question;
+          gameState.answered = false;
+
+          const container = document.getElementById("game-container");
+          container.innerHTML = renderer.renderGameUI(question);
+
+          container.querySelectorAll(".btn").forEach((btn) => {
+            btn.addEventListener("click", handleAnswer);
+          });
+
+          const debugInfo = document.getElementById("debug-info");
+          debugInfo.innerHTML = renderer.renderNetworkInfo(question);
+
+          return question;
+        },
+
+        // Compare: path-based vs configuration-based spatial reasoning
+        compareSpatial: () => {
+          console.log("\n=== COMPARISON: Spatial Reasoning ===\n");
+
+          console.log("Test 1: PATH-BASED (4 entities, 3 premises)");
+          console.log(
+            "Mental task: Accumulate vectors along a chain (A→B→C→D)",
+          );
+          console.log("Run: window.tanmateix.testLongPath(4)");
+
+          console.log("\n---\n");
+
+          console.log("Test 2: CONFIGURATION-BASED (3 entities, 3 premises)");
+          console.log(
+            "Mental task: Understand spatial configuration (triangle)",
+          );
+          console.log("Run: window.tanmateix.testSpatialGraph(3)");
+
+          console.log("\nTry both and compare which feels better!");
+        },
+      };
+
+      // Generate and display question
+      function newQuestion() {
+        // Use difficulty settings
+        const { numPaths, entitiesPerPath, timeLimit } = gameState.difficulty;
+        gameState.currentQuestion = generator.generateMultiPathQuestion(
+          numPaths,
+          entitiesPerPath,
         );
-        gameState.currentQuestion = question;
         gameState.answered = false;
+        gameState.timeRemaining = timeLimit;
 
         // Render
-        const container = document.getElementById('game-container');
-        container.innerHTML = renderer.renderGameUI(question);
+        const container = document.getElementById("game-container");
+        container.innerHTML = renderer.renderGameUI(gameState.currentQuestion);
 
         // Add event listeners to buttons
-        container.querySelectorAll('.btn').forEach(btn => {
-            btn.addEventListener('click', handleAnswer);
+        container.querySelectorAll(".btn").forEach((btn) => {
+          btn.addEventListener("click", handleAnswer);
         });
 
         // Update debug info
-        const debugInfo = document.getElementById('debug-info');
-        debugInfo.innerHTML = renderer.renderNetworkInfo(question);
+        const debugInfo = document.getElementById("debug-info");
+        debugInfo.innerHTML = renderer.renderNetworkInfo(
+          gameState.currentQuestion,
+        );
 
-        return question;
-    },
+        // Start timer
+        startTimer();
+      }
 
-    // Quick test with different path counts
-    test2Path: () => {
-        window.tanmateix.numPaths = 2;
-        return window.tanmateix.newQuestion();
-    },
-    test3Path: () => {
-        window.tanmateix.numPaths = 3;
-        return window.tanmateix.newQuestion();
-    },
-    test4Path: () => {
-        window.tanmateix.numPaths = 4;
-        return window.tanmateix.newQuestion();
-    },
+      // Timer functions
+      function startTimer() {
+        // Clear existing timer
+        if (gameState.timer) {
+          clearInterval(gameState.timer);
+        }
 
-    // Quick test with longer paths (more premises per path)
-    testLongPath: (entities = 5) => {
-        window.tanmateix.entitiesPerPath = entities;
-        window.tanmateix.numPaths = 1;
-        return window.tanmateix.newQuestion();
-    },
+        // Update display instantly (no transition)
+        updateTimerDisplay(true);
 
-    // Test spatial graph (fully-connected configuration)
-    testSpatialGraph: (entities = 3) => {
-        const question = generator.generateSpatialGraphQuestion(entities);
-        gameState.currentQuestion = question;
-        gameState.answered = false;
-
-        const container = document.getElementById('game-container');
-        container.innerHTML = renderer.renderGameUI(question);
-
-        container.querySelectorAll('.btn').forEach(btn => {
-            btn.addEventListener('click', handleAnswer);
-        });
-
-        const debugInfo = document.getElementById('debug-info');
-        debugInfo.innerHTML = renderer.renderNetworkInfo(question);
-
-        return question;
-    },
-
-    // Compare: path-based vs configuration-based spatial reasoning
-    compareSpatial: () => {
-        console.log('\n=== COMPARISON: Spatial Reasoning ===\n');
-
-        console.log('Test 1: PATH-BASED (4 entities, 3 premises)');
-        console.log('Mental task: Accumulate vectors along a chain (A→B→C→D)');
-        console.log('Run: window.tanmateix.testLongPath(4)');
-
-        console.log('\n---\n');
-
-        console.log('Test 2: CONFIGURATION-BASED (3 entities, 3 premises)');
-        console.log('Mental task: Understand spatial configuration (triangle)');
-        console.log('Run: window.tanmateix.testSpatialGraph(3)');
-
-        console.log('\nTry both and compare which feels better!');
-    }
-};
-
-// Generate and display question
-function newQuestion() {
-    // Use difficulty settings
-    const { numPaths, entitiesPerPath, timeLimit } = gameState.difficulty;
-    gameState.currentQuestion = generator.generateMultiPathQuestion(numPaths, entitiesPerPath);
-    gameState.answered = false;
-    gameState.timeRemaining = timeLimit;
-
-    // Render
-    const container = document.getElementById('game-container');
-    container.innerHTML = renderer.renderGameUI(gameState.currentQuestion);
-
-    // Add event listeners to buttons
-    container.querySelectorAll('.btn').forEach(btn => {
-        btn.addEventListener('click', handleAnswer);
-    });
-
-    // Update debug info
-    const debugInfo = document.getElementById('debug-info');
-    debugInfo.innerHTML = renderer.renderNetworkInfo(gameState.currentQuestion);
-
-    // Start timer
-    startTimer();
-}
-
-// Timer functions
-function startTimer() {
-    // Clear existing timer
-    if (gameState.timer) {
-        clearInterval(gameState.timer);
-    }
-
-    // Update display instantly (no transition)
-    updateTimerDisplay(true);
-
-    // Start countdown
-    gameState.timer = setInterval(() => {
-        if (!gameState.isPaused) {
+        // Start countdown
+        gameState.timer = setInterval(() => {
+          if (!gameState.isPaused) {
             gameState.timeRemaining--;
             updateTimerDisplay();
 
             if (gameState.timeRemaining <= 0) {
-                clearInterval(gameState.timer);
-                if (!gameState.answered) {
-                    handleTimeout();
-                }
+              clearInterval(gameState.timer);
+              if (!gameState.answered) {
+                handleTimeout();
+              }
             }
-        }
-    }, 1000);
-}
+          }
+        }, 1000);
+      }
 
-// Pause/Resume functions
-function togglePause() {
-    if (gameState.answered) return; // Can't pause between questions
+      // Pause/Resume functions
+      function togglePause() {
+        if (gameState.answered) return; // Can't pause between questions
 
-    gameState.isPaused = !gameState.isPaused;
-    const overlay = document.getElementById('pause-overlay');
+        gameState.isPaused = !gameState.isPaused;
+        const overlay = document.getElementById("pause-overlay");
 
-    if (gameState.isPaused) {
-        overlay.classList.add('visible');
-    } else {
-        // Add 5 seconds on resume (capped at time limit)
-        gameState.timeRemaining = Math.min(
+        if (gameState.isPaused) {
+          overlay.classList.add("visible");
+        } else {
+          // Add 5 seconds on resume (capped at time limit)
+          gameState.timeRemaining = Math.min(
             gameState.timeRemaining + 5,
-            gameState.difficulty.timeLimit
-        );
-        updateTimerDisplay(true); // Instant update on resume
+            gameState.difficulty.timeLimit,
+          );
+          updateTimerDisplay(true); // Instant update on resume
 
-        overlay.classList.remove('visible');
-    }
-}
+          overlay.classList.remove("visible");
+        }
+      }
 
-function updateTimerDisplay(instant = false) {
-    const progressBar = document.getElementById('progress');
-    const percentage = (gameState.timeRemaining / gameState.difficulty.timeLimit) * 100;
+      function updateTimerDisplay(instant = false) {
+        const progressBar = document.getElementById("progress");
+        const percentage =
+          (gameState.timeRemaining / gameState.difficulty.timeLimit) * 100;
 
-    // Disable transition for instant updates (start/resume)
-    if (instant) {
-        progressBar.style.transition = 'none';
-        progressBar.style.width = `${percentage}%`;
-        // Force reflow
-        progressBar.offsetHeight;
-        // Re-enable transition
-        progressBar.style.transition = '';
-    } else {
-        progressBar.style.width = `${percentage}%`;
-    }
-
-    // Color coding
-    if (gameState.timeRemaining <= 5) {
-        progressBar.style.background = 'var(--error)';
-    } else if (gameState.timeRemaining <= 10) {
-        progressBar.style.background = 'var(--gold)';
-    } else {
-        progressBar.style.background = 'var(--accent)';
-    }
-}
-
-function handleTimeout() {
-    gameState.answered = true;
-    gameState.consecutiveCorrect = 0;
-
-    // Visual feedback
-    showFeedback(false);
-
-    // Disable buttons
-    document.querySelectorAll('.btn').forEach(btn => {
-        btn.disabled = true;
-        btn.style.opacity = '0.5';
-        btn.style.cursor = 'not-allowed';
-    });
-
-    // Auto-advance
-    setTimeout(() => {
-        if (gameState.questionNumber < gameState.total) {
-            gameState.questionNumber++;
-            updateProgress();
-            updateStreak();
-            newQuestion();
+        // Disable transition for instant updates (start/resume)
+        if (instant) {
+          progressBar.style.transition = "none";
+          progressBar.style.width = `${percentage}%`;
+          // Force reflow
+          progressBar.offsetHeight;
+          // Re-enable transition
+          progressBar.style.transition = "";
         } else {
-            showGameOver();
+          progressBar.style.width = `${percentage}%`;
         }
-    }, 400);
-}
 
-// Handle answer
-function handleAnswer(e) {
-    if (gameState.answered) return;
-
-    const userAnswer = e.currentTarget.dataset.answer === 'true';
-    const correct = userAnswer === gameState.currentQuestion.isValid;
-
-    gameState.answered = true;
-    clearInterval(gameState.timer);
-
-    // Update streak and score
-    if (correct) {
-        gameState.score++;
-        gameState.consecutiveCorrect++;
-        updateScore();
-
-        // Check for difficulty increase (every 10 correct)
-        if (gameState.consecutiveCorrect > 0 && gameState.consecutiveCorrect % 10 === 0) {
-            increaseDifficulty();
+        // Color coding
+        if (gameState.timeRemaining <= 5) {
+          progressBar.style.background = "var(--error)";
+        } else if (gameState.timeRemaining <= 10) {
+          progressBar.style.background = "var(--gold)";
+        } else {
+          progressBar.style.background = "var(--accent)";
         }
-    } else {
+      }
+
+      function handleTimeout() {
+        gameState.answered = true;
         gameState.consecutiveCorrect = 0;
-    }
 
-    // Visual feedback
-    showFeedback(correct);
+        // Visual feedback
+        showFeedback(false);
 
-    // Disable buttons
-    document.querySelectorAll('.btn').forEach(btn => {
-        btn.disabled = true;
-        btn.style.opacity = '0.5';
-        btn.style.cursor = 'not-allowed';
-    });
+        // Disable buttons
+        document.querySelectorAll(".btn").forEach((btn) => {
+          btn.disabled = true;
+          btn.style.opacity = "0.5";
+          btn.style.cursor = "not-allowed";
+        });
 
-    // Auto-advance after shorter delay (snappier!)
-    setTimeout(() => {
-        if (gameState.questionNumber < gameState.total) {
+        // Auto-advance
+        setTimeout(() => {
+          if (gameState.questionNumber < gameState.total) {
             gameState.questionNumber++;
             updateProgress();
             updateStreak();
             newQuestion();
-        } else {
+          } else {
             showGameOver();
+          }
+        }, 400);
+      }
+
+      // Handle answer
+      function handleAnswer(e) {
+        if (gameState.answered) return;
+
+        const userAnswer = e.currentTarget.dataset.answer === "true";
+        const correct = userAnswer === gameState.currentQuestion.isValid;
+
+        gameState.answered = true;
+        clearInterval(gameState.timer);
+
+        // Update streak and score
+        if (correct) {
+          gameState.score++;
+          gameState.consecutiveCorrect++;
+          updateScore();
+
+          // Check for difficulty increase (every 10 correct)
+          if (
+            gameState.consecutiveCorrect > 0 &&
+            gameState.consecutiveCorrect % 10 === 0
+          ) {
+            increaseDifficulty();
+          }
+        } else {
+          gameState.consecutiveCorrect = 0;
         }
-    }, 400);
-}
 
-// Increase difficulty
-function increaseDifficulty() {
-    const diff = gameState.difficulty;
-    const options = [];
+        // Visual feedback
+        showFeedback(correct);
 
-    // Check which dimensions can be increased
-    if (diff.numPaths < 3) options.push('paths');
-    if (diff.entitiesPerPath < 5) options.push('entities');
-    if (diff.timeLimit > 10) options.push('time');
+        // Disable buttons
+        document.querySelectorAll(".btn").forEach((btn) => {
+          btn.disabled = true;
+          btn.style.opacity = "0.5";
+          btn.style.cursor = "not-allowed";
+        });
 
-    if (options.length === 0) {
-        console.log('🏆 Maximum difficulty reached!');
-        return;
-    }
+        // Auto-advance after shorter delay (snappier!)
+        setTimeout(() => {
+          if (gameState.questionNumber < gameState.total) {
+            gameState.questionNumber++;
+            updateProgress();
+            updateStreak();
+            newQuestion();
+          } else {
+            showGameOver();
+          }
+        }, 400);
+      }
 
-    // Randomly pick one dimension to increase
-    const dimension = options[Math.floor(Math.random() * options.length)];
+      // Increase difficulty
+      function increaseDifficulty() {
+        const diff = gameState.difficulty;
+        const options = [];
 
-    if (dimension === 'paths') {
-        diff.numPaths++;
-        console.log(`📈 Difficulty increased: ${diff.numPaths} paths`);
-    } else if (dimension === 'entities') {
-        diff.entitiesPerPath++;
-        console.log(`📈 Difficulty increased: ${diff.entitiesPerPath} entities`);
-    } else if (dimension === 'time') {
-        diff.timeLimit -= 5;
-        console.log(`📈 Difficulty increased: ${diff.timeLimit}s timer`);
-    }
+        // Check which dimensions can be increased
+        if (diff.numPaths < 3) options.push("paths");
+        if (diff.entitiesPerPath < 5) options.push("entities");
+        if (diff.timeLimit > 10) options.push("time");
 
-    updateLevel();
-}
+        if (options.length === 0) {
+          console.log("🏆 Maximum difficulty reached!");
+          return;
+        }
 
-// Update level display
-function updateLevel() {
-    const diff = gameState.difficulty;
-    const level = (diff.numPaths - 1) + (diff.entitiesPerPath - 3) + Math.floor((30 - diff.timeLimit) / 5);
-    document.getElementById('lbl-level').textContent = level + 1;
-}
+        // Randomly pick one dimension to increase
+        const dimension = options[Math.floor(Math.random() * options.length)];
 
-// Update streak display
-function updateStreak() {
-    document.getElementById('lbl-streak').textContent = gameState.consecutiveCorrect;
-}
+        if (dimension === "paths") {
+          diff.numPaths++;
+          console.log(`📈 Difficulty increased: ${diff.numPaths} paths`);
+        } else if (dimension === "entities") {
+          diff.entitiesPerPath++;
+          console.log(
+            `📈 Difficulty increased: ${diff.entitiesPerPath} entities`,
+          );
+        } else if (dimension === "time") {
+          diff.timeLimit -= 5;
+          console.log(`📈 Difficulty increased: ${diff.timeLimit}s timer`);
+        }
 
-// Show feedback
-function showFeedback(correct) {
-    const container = document.getElementById('game-container');
-    const className = correct ? 'flash-correct' : 'flash-incorrect';
+        updateLevel();
+      }
 
-    container.classList.add(className);
-    setTimeout(() => {
-        container.classList.remove(className);
-    }, 400);
-}
+      // Update level display
+      function updateLevel() {
+        const diff = gameState.difficulty;
+        const level =
+          diff.numPaths -
+          1 +
+          (diff.entitiesPerPath - 3) +
+          Math.floor((30 - diff.timeLimit) / 5);
+        document.getElementById("lbl-level").textContent = level + 1;
+      }
 
-// Update score
-function updateScore() {
-    document.getElementById('lbl-score').textContent = gameState.score;
-}
+      // Update streak display
+      function updateStreak() {
+        document.getElementById("lbl-streak").textContent =
+          gameState.consecutiveCorrect;
+      }
 
-// Update progress
-function updateProgress() {
-    // Progress bar is now used for timer, not question progress
-}
+      // Show feedback
+      function showFeedback(correct) {
+        const container = document.getElementById("game-container");
+        const className = correct ? "flash-correct" : "flash-incorrect";
 
-// Show game over
-function showGameOver() {
-    clearInterval(gameState.timer);
-    const container = document.getElementById('game-container');
-    const percentage = Math.round((gameState.score / gameState.total) * 100);
-    const finalLevel = (gameState.difficulty.numPaths - 1) +
-                       (gameState.difficulty.entitiesPerPath - 3) +
-                       Math.floor((30 - gameState.difficulty.timeLimit) / 5) + 1;
+        container.classList.add(className);
+        setTimeout(() => {
+          container.classList.remove(className);
+        }, 400);
+      }
 
-    container.innerHTML = `
+      // Update score
+      function updateScore() {
+        document.getElementById("lbl-score").textContent = gameState.score;
+      }
+
+      // Update progress
+      function updateProgress() {
+        // Progress bar is now used for timer, not question progress
+      }
+
+      // Show game over
+      function showGameOver() {
+        clearInterval(gameState.timer);
+        const container = document.getElementById("game-container");
+        const percentage = Math.round(
+          (gameState.score / gameState.total) * 100,
+        );
+        const finalLevel =
+          gameState.difficulty.numPaths -
+          1 +
+          (gameState.difficulty.entitiesPerPath - 3) +
+          Math.floor((30 - gameState.difficulty.timeLimit) / 5) +
+          1;
+
+        container.innerHTML = `
         <div class="premises-container" style="text-align: center; padding: 40px;">
             <h2 style="color: var(--accent); font-size: 2rem; margin-bottom: 20px;">Game Complete!</h2>
             <div style="font-size: 3rem; margin: 30px 0;">
-                ${percentage >= 80 ? '🏆' : percentage >= 60 ? '🎯' : '💪'}
+                ${percentage >= 80 ? "🏆" : percentage >= 60 ? "🎯" : "💪"}
             </div>
             <div style="font-size: 1.5rem; margin-bottom: 20px;">
                 Score: <span style="color: var(--success); font-weight: bold;">${gameState.score}</span> / ${gameState.total}
@@ -490,92 +601,91 @@ function showGameOver() {
                 Final Level: <span style="font-weight: bold;">${finalLevel}</span>
             </div>
             <div style="font-size: 1rem; margin-top: 30px; opacity: 0.8;">
-                ${percentage >= 80 ? 'Outstanding reasoning!' : percentage >= 60 ? 'Great job!' : 'Keep practicing!'}
+                ${percentage >= 80 ? "Outstanding reasoning!" : percentage >= 60 ? "Great job!" : "Keep practicing!"}
             </div>
         </div>
     `;
 
-    // Auto-restart with reset difficulty
-    setTimeout(() => {
-        gameState.score = 0;
-        gameState.questionNumber = 1;
-        gameState.consecutiveCorrect = 0;
-        gameState.difficulty = {
+        // Auto-restart with reset difficulty
+        setTimeout(() => {
+          gameState.score = 0;
+          gameState.questionNumber = 1;
+          gameState.consecutiveCorrect = 0;
+          gameState.difficulty = {
             numPaths: 1,
             entitiesPerPath: 3,
-            timeLimit: 30
-        };
-        updateScore();
-        updateProgress();
-        updateStreak();
-        updateLevel();
-        newQuestion();
-    }, 5000);
-}
+            timeLimit: 30,
+          };
+          updateScore();
+          updateProgress();
+          updateStreak();
+          updateLevel();
+          newQuestion();
+        }, 5000);
+      }
 
-// Don't start game automatically - wait for start button
-updateScore();
-updateProgress();
-updateStreak();
-updateLevel();
+      // Don't start game automatically - wait for start button
+      updateScore();
+      updateProgress();
+      updateStreak();
+      updateLevel();
 
-// Fetch and display version from manifest.json
-fetch('manifest.json')
-    .then(res => res.json())
-    .then(manifest => {
-        const versionDisplay = document.getElementById('version-display');
-        if (versionDisplay && manifest.version) {
+      // Fetch and display version from manifest.json
+      fetch("manifest.json")
+        .then((res) => res.json())
+        .then((manifest) => {
+          const versionDisplay = document.getElementById("version-display");
+          if (versionDisplay && manifest.version) {
             versionDisplay.textContent = `v${manifest.version}`;
+          }
+        })
+        .catch((err) => {
+          console.warn("Could not load version from manifest:", err);
+        });
+
+      // Info modal handlers
+      const modal = document.getElementById("info-modal");
+      const openBtn = document.getElementById("game-info-btn");
+      const closeBtn = document.getElementById("info-modal-close");
+
+      openBtn.addEventListener("click", () => {
+        modal.classList.add("visible");
+      });
+
+      closeBtn.addEventListener("click", () => {
+        modal.classList.remove("visible");
+      });
+
+      // Close on overlay click
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) {
+          modal.classList.remove("visible");
         }
-    })
-    .catch(err => {
-        console.warn('Could not load version from manifest:', err);
-    });
+      });
 
-// Info modal handlers
-const modal = document.getElementById('info-modal');
-const openBtn = document.getElementById('game-info-btn');
-const closeBtn = document.getElementById('info-modal-close');
+      // Start game handler
+      const startBtn = document.getElementById("start-btn");
+      const startScreen = document.getElementById("start-screen");
 
-openBtn.addEventListener('click', () => {
-    modal.classList.add('visible');
-});
+      startBtn.addEventListener("click", () => {
+        startScreen.classList.remove("visible");
+        newQuestion();
+      });
 
-closeBtn.addEventListener('click', () => {
-    modal.classList.remove('visible');
-});
+      // Pause/Resume handlers
+      const resumeBtn = document.getElementById("resume-btn");
+      const progressContainer = document.querySelector(".progress-container");
 
-// Close on overlay click
-modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-        modal.classList.remove('visible');
-    }
-});
+      progressContainer.addEventListener("click", togglePause);
+      resumeBtn.addEventListener("click", togglePause);
 
-// Start game handler
-const startBtn = document.getElementById('start-btn');
-const startScreen = document.getElementById('start-screen');
-
-startBtn.addEventListener('click', () => {
-    startScreen.classList.remove('visible');
-    newQuestion();
-});
-
-// Pause/Resume handlers
-const resumeBtn = document.getElementById('resume-btn');
-const progressContainer = document.querySelector('.progress-container');
-
-progressContainer.addEventListener('click', togglePause);
-resumeBtn.addEventListener('click', togglePause);
-
-// Keyboard shortcut (Space to toggle pause)
-document.addEventListener('keydown', (e) => {
-    if (e.code === 'Space' && !modal.classList.contains('visible')) {
-        e.preventDefault();
-        togglePause();
-    }
-});
-</script>
-
-</body>
+      // Keyboard shortcut (Space to toggle pause)
+      document.addEventListener("keydown", (e) => {
+        if (e.code === "Space" && !modal.classList.contains("visible")) {
+          e.preventDefault();
+          togglePause();
+        }
+      });
+    </script>
+  </body>
 </html>

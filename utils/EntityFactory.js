@@ -1,4 +1,4 @@
-import { Entity } from '../core/Entity.js';
+import { Entity } from "../core/Entity.js";
 
 /**
  * EntityFactory creates unique entities with various display values.
@@ -15,7 +15,7 @@ export class EntityFactory {
     this.config = {
       useNonsenseWords: config.useNonsenseWords !== false,
       nonsenseWordLength: config.nonsenseWordLength || 5,
-      ...config
+      ...config,
     };
     this.random = random || { random: () => Math.random() };
     this.usedValues = new Set();
@@ -57,7 +57,9 @@ export class EntityFactory {
       value = this.generateValue();
       attempts++;
       if (attempts > 1000) {
-        throw new Error('Could not generate unique entity value after 1000 attempts');
+        throw new Error(
+          "Could not generate unique entity value after 1000 attempts",
+        );
       }
     } while (this.usedValues.has(value));
 
@@ -80,19 +82,43 @@ export class EntityFactory {
    * @returns {string}
    */
   createNonsenseWord() {
-    const vowels = ['A', 'E', 'I', 'O', 'U'];
-    const consonants = ['B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z'];
-    const bannedWords = ['ASS', 'FUCK', 'SHIT', 'DAMN', 'HELL', 'CRAP', 'PISS'];
+    const vowels = ["A", "E", "I", "O", "U"];
+    const consonants = [
+      "B",
+      "C",
+      "D",
+      "F",
+      "G",
+      "H",
+      "J",
+      "K",
+      "L",
+      "M",
+      "N",
+      "P",
+      "Q",
+      "R",
+      "S",
+      "T",
+      "V",
+      "W",
+      "X",
+      "Y",
+      "Z",
+    ];
+    const bannedWords = ["ASS", "FUCK", "SHIT", "DAMN", "HELL", "CRAP", "PISS"];
 
-    let word = '';
+    let word = "";
     const length = this.config.nonsenseWordLength;
 
-    for (let i = 0; i < 100; i++) { // Max 100 attempts
-      word = '';
+    for (let i = 0; i < 100; i++) {
+      // Max 100 attempts
+      word = "";
       for (let j = 0; j < length; j++) {
         if (j % 2 === 0) {
           // Consonant
-          word += consonants[Math.floor(this.random.random() * consonants.length)];
+          word +=
+            consonants[Math.floor(this.random.random() * consonants.length)];
         } else {
           // Vowel
           word += vowels[Math.floor(this.random.random() * vowels.length)];
@@ -100,7 +126,7 @@ export class EntityFactory {
       }
 
       // Check if word contains banned substring
-      if (!bannedWords.some(banned => word.includes(banned))) {
+      if (!bannedWords.some((banned) => word.includes(banned))) {
         return word;
       }
     }

@@ -1,6 +1,6 @@
-import { LinearRelationType } from '../relations/LinearRelationType.js';
-import { SpatialRelationType } from '../relations/SpatialRelationType.js';
-import { CategoricalRelationType } from '../relations/CategoricalRelationType.js';
+import { LinearRelationType } from "../relations/LinearRelationType.js";
+import { SpatialRelationType } from "../relations/SpatialRelationType.js";
+import { CategoricalRelationType } from "../relations/CategoricalRelationType.js";
 
 /**
  * ConclusionGenerator generates valid and invalid conclusions from a premise network.
@@ -28,12 +28,17 @@ export class ConclusionGenerator {
     const {
       valid = this.random.coinFlip(),
       relationType = null,
-      strategy = 'random',
-      inferredOnly = false
+      strategy = "random",
+      inferredOnly = false,
     } = options;
 
     if (valid) {
-      return this.generateValidConclusion(network, relationType, strategy, inferredOnly);
+      return this.generateValidConclusion(
+        network,
+        relationType,
+        strategy,
+        inferredOnly,
+      );
     } else {
       return this.generateInvalidConclusion(network, relationType, strategy);
     }
@@ -42,15 +47,23 @@ export class ConclusionGenerator {
   /**
    * Generate a valid conclusion
    */
-  generateValidConclusion(network, relationType, strategy, inferredOnly = false) {
+  generateValidConclusion(
+    network,
+    relationType,
+    strategy,
+    inferredOnly = false,
+  ) {
     let relation;
 
     // If inferredOnly, force strategy to be 'inferred'
     if (inferredOnly) {
-      strategy = 'inferred';
+      strategy = "inferred";
     }
 
-    if (strategy === 'direct' || (strategy === 'random' && this.random.random() < 0.5)) {
+    if (
+      strategy === "direct" ||
+      (strategy === "random" && this.random.random() < 0.5)
+    ) {
       // Pick an existing relation
       let candidates = network.relations;
       if (relationType) {
@@ -58,45 +71,57 @@ export class ConclusionGenerator {
       }
 
       if (candidates.length === 0) {
-        return this.generateValidConclusion(network, relationType, 'inferred', inferredOnly);
+        return this.generateValidConclusion(
+          network,
+          relationType,
+          "inferred",
+          inferredOnly,
+        );
       }
 
       relation = this.random.pickRandom(candidates);
-
     } else {
       // Generate inferred relation
       const inferred = network.inferRelations();
       let candidates = inferred;
       if (relationType) {
-        candidates = inferred.filter(r => r.type === relationType);
+        candidates = inferred.filter((r) => r.type === relationType);
       }
 
       // Filter out existing premises AND their inverses if inferredOnly is true
       if (inferredOnly) {
-        candidates = candidates.filter(inferredRel =>
-          !network.relations.some(existingRel => {
-            // Check if it's the same as existing premise (forward)
-            const sameForward = existingRel.entities[0].id === inferredRel.entities[0].id &&
-                               existingRel.entities[1].id === inferredRel.entities[1].id &&
-                               existingRel.type === inferredRel.type;
+        candidates = candidates.filter(
+          (inferredRel) =>
+            !network.relations.some((existingRel) => {
+              // Check if it's the same as existing premise (forward)
+              const sameForward =
+                existingRel.entities[0].id === inferredRel.entities[0].id &&
+                existingRel.entities[1].id === inferredRel.entities[1].id &&
+                existingRel.type === inferredRel.type;
 
-            // Check if it's the inverse of existing premise (backward)
-            const sameBackward = existingRel.entities[0].id === inferredRel.entities[1].id &&
-                                existingRel.entities[1].id === inferredRel.entities[0].id &&
-                                existingRel.type === inferredRel.type;
+              // Check if it's the inverse of existing premise (backward)
+              const sameBackward =
+                existingRel.entities[0].id === inferredRel.entities[1].id &&
+                existingRel.entities[1].id === inferredRel.entities[0].id &&
+                existingRel.type === inferredRel.type;
 
-            return sameForward || sameBackward;
-          })
+              return sameForward || sameBackward;
+            }),
         );
       }
 
       if (candidates.length === 0) {
         // If no inferred relations available and inferredOnly is false, fall back to direct
         if (!inferredOnly) {
-          return this.generateValidConclusion(network, relationType, 'direct', inferredOnly);
+          return this.generateValidConclusion(
+            network,
+            relationType,
+            "direct",
+            inferredOnly,
+          );
         }
         // If inferredOnly is true and no inferred relations, this is an error
-        throw new Error('No inferred relations available for conclusion');
+        throw new Error("No inferred relations available for conclusion");
       }
 
       relation = this.random.pickRandom(candidates);
@@ -110,7 +135,7 @@ export class ConclusionGenerator {
     return {
       relation,
       isValid: true,
-      strategy: strategy === 'random' ? 'valid-mixed' : `valid-${strategy}`
+      strategy: strategy === "random" ? "valid-mixed" : `valid-${strategy}`,
     };
   }
 
@@ -118,23 +143,22 @@ export class ConclusionGenerator {
    * Generate an invalid conclusion
    */
   generateInvalidConclusion(network, relationType, strategy) {
-    const strategies = ['contradict', 'wrong-relation', 'unrelated'];
-    const chosenStrategy = strategy === 'random'
-      ? this.random.pickRandom(strategies)
-      : strategy;
+    const strategies = ["contradict", "wrong-relation", "unrelated"];
+    const chosenStrategy =
+      strategy === "random" ? this.random.pickRandom(strategies) : strategy;
 
     switch (chosenStrategy) {
-      case 'contradict':
+      case "contradict":
         return this.generateContradictingConclusion(network, relationType);
 
-      case 'wrong-relation':
+      case "wrong-relation":
         return this.generateWrongRelationConclusion(network, relationType);
 
-      case 'unrelated':
+      case "unrelated":
         return this.generateUnrelatedConclusion(network, relationType);
 
       default:
-        return this.generateInvalidConclusion(network, relationType, 'random');
+        return this.generateInvalidConclusion(network, relationType, "random");
     }
   }
 
@@ -148,7 +172,11 @@ export class ConclusionGenerator {
     }
 
     if (candidates.length === 0) {
-      return this.generateInvalidConclusion(network, relationType, 'wrong-relation');
+      return this.generateInvalidConclusion(
+        network,
+        relationType,
+        "wrong-relation",
+      );
     }
 
     const original = this.random.pickRandom(candidates);
@@ -157,7 +185,7 @@ export class ConclusionGenerator {
     return {
       relation: contradicting,
       isValid: false,
-      strategy: 'invalid-contradict'
+      strategy: "invalid-contradict",
     };
   }
 
@@ -168,29 +196,23 @@ export class ConclusionGenerator {
     if (relation.type instanceof LinearRelationType) {
       const newProps = {
         ...relation.properties,
-        direction: -relation.properties.direction
+        direction: -relation.properties.direction,
       };
       return relation.type.createRelation(relation.entities, newProps);
-
     } else if (relation.type instanceof SpatialRelationType) {
       // Pick a different direction
       const wrongVector = this.randomDifferentVector(
         relation.properties.vector,
-        relation.type.dimensions
+        relation.type.dimensions,
       );
-      return relation.type.createRelation(
-        relation.entities,
-        {
-          vector: wrongVector,
-          vocabStyle: relation.properties.vocabStyle // Preserve vocabulary style
-        }
-      );
-
+      return relation.type.createRelation(relation.entities, {
+        vector: wrongVector,
+        vocabStyle: relation.properties.vocabStyle, // Preserve vocabulary style
+      });
     } else if (relation.type instanceof CategoricalRelationType) {
-      return relation.type.createRelation(
-        relation.entities,
-        { same: !relation.properties.same }
-      );
+      return relation.type.createRelation(relation.entities, {
+        same: !relation.properties.same,
+      });
     }
 
     throw new Error(`Cannot create contradiction for ${relation.type.name}`);
@@ -202,7 +224,7 @@ export class ConclusionGenerator {
   generateWrongRelationConclusion(network, relationType) {
     const entities = Array.from(network.entities.values());
     if (entities.length < 2) {
-      return this.generateInvalidConclusion(network, relationType, 'unrelated');
+      return this.generateInvalidConclusion(network, relationType, "unrelated");
     }
 
     const [e1, e2] = this.random.pickRandomN(entities, 2);
@@ -211,14 +233,15 @@ export class ConclusionGenerator {
     const actual = network.getRelationBetween(e1.id, e2.id);
 
     if (!actual) {
-      return this.generateInvalidConclusion(network, relationType, 'unrelated');
+      return this.generateInvalidConclusion(network, relationType, "unrelated");
     }
 
     // Infer what it should be
     const inferred = network.inferRelations();
-    const inferredActual = inferred.find(r =>
-      (r.entities[0].id === e1.id && r.entities[1].id === e2.id) ||
-      (r.entities[0].id === e2.id && r.entities[1].id === e1.id)
+    const inferredActual = inferred.find(
+      (r) =>
+        (r.entities[0].id === e1.id && r.entities[1].id === e2.id) ||
+        (r.entities[0].id === e2.id && r.entities[1].id === e1.id),
     );
 
     if (inferredActual) {
@@ -226,11 +249,11 @@ export class ConclusionGenerator {
       return {
         relation: wrong,
         isValid: false,
-        strategy: 'invalid-wrong-relation'
+        strategy: "invalid-wrong-relation",
       };
     }
 
-    return this.generateInvalidConclusion(network, relationType, 'contradict');
+    return this.generateInvalidConclusion(network, relationType, "contradict");
   }
 
   /**
@@ -240,46 +263,57 @@ export class ConclusionGenerator {
     const unrelated = network.getUnrelatedPairs();
 
     if (unrelated.length === 0) {
-      return this.generateInvalidConclusion(network, relationType, 'contradict');
+      return this.generateInvalidConclusion(
+        network,
+        relationType,
+        "contradict",
+      );
     }
 
     const [e1, e2] = this.random.pickRandom(unrelated);
 
     // Pick random relation type if not specified
-    const type = relationType || this.random.pickRandom(
-      Array.from(new Set(network.relations.map(r => r.type)))
-    );
+    const type =
+      relationType ||
+      this.random.pickRandom(
+        Array.from(new Set(network.relations.map((r) => r.type))),
+      );
 
     // Create random relation
     let relation;
     if (type instanceof LinearRelationType) {
       // Get dimension from existing linear relations to maintain consistency
-      const existingLinearRel = network.relations.find(r => r.type instanceof LinearRelationType);
-      const dimension = existingLinearRel?.properties.dimension || 'size';
+      const existingLinearRel = network.relations.find(
+        (r) => r.type instanceof LinearRelationType,
+      );
+      const dimension = existingLinearRel?.properties.dimension || "size";
 
       relation = type.createRelation([e1, e2], {
         direction: this.random.pickRandom([-1, 1]),
-        dimension: dimension // Use same dimension as premises
+        dimension: dimension, // Use same dimension as premises
       });
     } else if (type instanceof SpatialRelationType) {
       // Get vocabStyle from existing spatial relations to maintain consistency
-      const existingSpatialRel = network.relations.find(r => r.type instanceof SpatialRelationType);
-      const vocabStyle = existingSpatialRel?.properties.vocabStyle || 'cardinal';
+      const existingSpatialRel = network.relations.find(
+        (r) => r.type instanceof SpatialRelationType,
+      );
+      const vocabStyle =
+        existingSpatialRel?.properties.vocabStyle || "cardinal";
 
       relation = type.createRelation([e1, e2], {
         vector: this.random.randomVector(type.dimensions),
-        vocabStyle: vocabStyle // Preserve vocabulary style
+        vocabStyle: vocabStyle, // Preserve vocabulary style
       });
     } else if (type instanceof CategoricalRelationType) {
       relation = type.createRelation([e1, e2], {
-        same: this.random.coinFlip()
+        same: this.random.coinFlip(),
       });
     }
 
     return {
       relation,
       isValid: false,
-      strategy: 'invalid-unrelated'
+      strategy: "invalid-unrelated",
     };
   }
 
@@ -304,7 +338,7 @@ export class ConclusionGenerator {
 
     if (candidates.length === 0) {
       // Fallback: return negated original
-      return original.map(x => -x);
+      return original.map((x) => -x);
     }
 
     return this.random.pickRandom(candidates);

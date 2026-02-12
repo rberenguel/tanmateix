@@ -20,7 +20,7 @@ export class RelationType {
    * @returns {Relation}
    */
   createRelation(entities, properties) {
-    throw new Error('Must implement createRelation');
+    throw new Error("Must implement createRelation");
   }
 
   /**
@@ -29,7 +29,7 @@ export class RelationType {
    * @returns {boolean}
    */
   validate(relation) {
-    throw new Error('Must implement validate');
+    throw new Error("Must implement validate");
   }
 
   /**
@@ -38,7 +38,7 @@ export class RelationType {
    * @returns {Relation}
    */
   inverse(relation) {
-    throw new Error('Must implement inverse');
+    throw new Error("Must implement inverse");
   }
 
   /**
@@ -48,7 +48,7 @@ export class RelationType {
    * @returns {boolean}
    */
   contradicts(relation1, relation2) {
-    throw new Error('Must implement contradicts');
+    throw new Error("Must implement contradicts");
   }
 
   /**

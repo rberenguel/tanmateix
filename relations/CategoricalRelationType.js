@@ -1,5 +1,5 @@
-import { RelationType } from '../core/RelationType.js';
-import { Relation } from '../core/Relation.js';
+import { RelationType } from "../core/RelationType.js";
+import { Relation } from "../core/Relation.js";
 
 /**
  * CategoricalRelationType handles binary classification relationships.
@@ -10,7 +10,7 @@ import { Relation } from '../core/Relation.js';
  */
 export class CategoricalRelationType extends RelationType {
   constructor() {
-    super('Categorical');
+    super("Categorical");
   }
 
   /**
@@ -26,8 +26,10 @@ export class CategoricalRelationType extends RelationType {
    * Validate relation
    */
   validate(relation) {
-    return relation.entities.length === 2 &&
-           typeof relation.properties.same === 'boolean';
+    return (
+      relation.entities.length === 2 &&
+      typeof relation.properties.same === "boolean"
+    );
   }
 
   /**
@@ -35,11 +37,9 @@ export class CategoricalRelationType extends RelationType {
    * For categorical, inverse has same "sameness" (A=B is same as B=A)
    */
   inverse(relation) {
-    return new Relation(
-      this,
-      [relation.entities[1], relation.entities[0]],
-      { same: relation.properties.same }
-    );
+    return new Relation(this, [relation.entities[1], relation.entities[0]], {
+      same: relation.properties.same,
+    });
   }
 
   /**
@@ -84,16 +84,18 @@ export class CategoricalRelationType extends RelationType {
 
           if (r1.properties.same && r2.properties.same) {
             // A=B, B=C => A=C
-            inferred.push(this.createRelation(
-              [r1.entities[0], r2.entities[1]],
-              { same: true }
-            ));
+            inferred.push(
+              this.createRelation([r1.entities[0], r2.entities[1]], {
+                same: true,
+              }),
+            );
           } else if (r1.properties.same || r2.properties.same) {
             // A=B, B≠C => A≠C  OR  A≠B, B=C => A≠C
-            inferred.push(this.createRelation(
-              [r1.entities[0], r2.entities[1]],
-              { same: false }
-            ));
+            inferred.push(
+              this.createRelation([r1.entities[0], r2.entities[1]], {
+                same: false,
+              }),
+            );
           }
           // If both are "different" (A≠B, B≠C), we skip - cannot infer
         }
@@ -107,9 +109,11 @@ export class CategoricalRelationType extends RelationType {
    * Check if two relations have same entities (in any order)
    */
   sameEntities(rel1, rel2) {
-    return (rel1.entities[0].id === rel2.entities[0].id &&
-            rel1.entities[1].id === rel2.entities[1].id) ||
-           (rel1.entities[0].id === rel2.entities[1].id &&
-            rel1.entities[1].id === rel2.entities[0].id);
+    return (
+      (rel1.entities[0].id === rel2.entities[0].id &&
+        rel1.entities[1].id === rel2.entities[1].id) ||
+      (rel1.entities[0].id === rel2.entities[1].id &&
+        rel1.entities[1].id === rel2.entities[0].id)
+    );
   }
 }

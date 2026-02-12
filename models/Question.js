@@ -41,11 +41,11 @@ export class Question {
    */
   toJSON() {
     return {
-      premises: this.premises.map(p => this.serializeRelation(p)),
+      premises: this.premises.map((p) => this.serializeRelation(p)),
       conclusion: this.serializeRelation(this.conclusion),
       isValid: this.isValid,
       metadata: this.metadata,
-      timestamp: this.timestamp
+      timestamp: this.timestamp,
     };
   }
 
@@ -55,11 +55,11 @@ export class Question {
   serializeRelation(relation) {
     return {
       type: relation.type.name,
-      entities: relation.entities.map(e => ({
+      entities: relation.entities.map((e) => ({
         id: e.id,
-        displayValue: e.displayValue
+        displayValue: e.displayValue,
       })),
-      properties: relation.properties
+      properties: relation.properties,
     };
   }
 }

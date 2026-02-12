@@ -1,8 +1,11 @@
-import { PremiseNetwork } from '../core/PremiseNetwork.js';
-import { LinearRelationType } from '../relations/LinearRelationType.js';
-import { SpatialRelationType } from '../relations/SpatialRelationType.js';
-import { CategoricalRelationType } from '../relations/CategoricalRelationType.js';
-import { pickLinearVocabulary, pickSpatialVocabulary } from '../render/Vocabulary.js';
+import { PremiseNetwork } from "../core/PremiseNetwork.js";
+import { LinearRelationType } from "../relations/LinearRelationType.js";
+import { SpatialRelationType } from "../relations/SpatialRelationType.js";
+import { CategoricalRelationType } from "../relations/CategoricalRelationType.js";
+import {
+  pickLinearVocabulary,
+  pickSpatialVocabulary,
+} from "../render/Vocabulary.js";
 
 /**
  * PremiseNetworkGenerator generates premise networks with specified characteristics.
@@ -34,7 +37,7 @@ export class PremiseNetworkGenerator {
     const network = new PremiseNetwork();
 
     // Pick a consistent spatial vocabulary style for this network
-    this.spatialVocabStyle = this.random.pickRandom(['cardinal', 'relative']);
+    this.spatialVocabStyle = this.random.pickRandom(["cardinal", "relative"]);
 
     // Pick a consistent linear dimension for this network (ONE dimension per question!)
     this.linearDimension = this.pickDimension();
@@ -77,7 +80,7 @@ export class PremiseNetworkGenerator {
     for (const spec of relationSpecs) {
       const instances = this.random.randomInt(
         Math.max(1, spec.count - 1),
-        spec.count + 1
+        spec.count + 1,
       );
 
       for (let i = 0; i < instances; i++) {
@@ -97,7 +100,7 @@ export class PremiseNetworkGenerator {
 
     // Start with first entity
     const connected = new Set([entities[0].id]);
-    const unconnected = new Set(entities.slice(1).map(e => e.id));
+    const unconnected = new Set(entities.slice(1).map((e) => e.id));
     let lastAddedEntity = entities[0];
 
     for (const relationType of relationPlan) {
@@ -109,8 +112,8 @@ export class PremiseNetworkGenerator {
         fromEntity = lastAddedEntity;
       } else {
         // Decide whether to branch or extend
-        const shouldBranch = this.random.random() < branchingFactor &&
-                            connected.size > 1;
+        const shouldBranch =
+          this.random.random() < branchingFactor && connected.size > 1;
 
         if (shouldBranch) {
           // Pick random connected entity (weighted by degree)
@@ -129,7 +132,7 @@ export class PremiseNetworkGenerator {
       const relation = this.createRandomRelation(
         relationType,
         fromEntity,
-        toEntity
+        toEntity,
       );
 
       try {
@@ -155,7 +158,7 @@ export class PremiseNetworkGenerator {
       const relation = this.createRandomRelation(
         relationType,
         fromEntity,
-        toEntity
+        toEntity,
       );
 
       try {
@@ -177,25 +180,19 @@ export class PremiseNetworkGenerator {
     if (relationType instanceof LinearRelationType) {
       const direction = this.random.pickRandom([-1, 1]);
       // Use the consistent dimension chosen for this network
-      return relationType.createRelation(
-        [fromEntity, toEntity],
-        { direction, dimension: this.linearDimension }
-      );
+      return relationType.createRelation([fromEntity, toEntity], {
+        direction,
+        dimension: this.linearDimension,
+      });
     } else if (relationType instanceof SpatialRelationType) {
       const vector = this.random.randomVector(relationType.dimensions);
-      return relationType.createRelation(
-        [fromEntity, toEntity],
-        {
-          vector,
-          vocabStyle: this.spatialVocabStyle // Use consistent style for whole network
-        }
-      );
+      return relationType.createRelation([fromEntity, toEntity], {
+        vector,
+        vocabStyle: this.spatialVocabStyle, // Use consistent style for whole network
+      });
     } else if (relationType instanceof CategoricalRelationType) {
       const same = this.random.coinFlip();
-      return relationType.createRelation(
-        [fromEntity, toEntity],
-        { same }
-      );
+      return relationType.createRelation([fromEntity, toEntity], { same });
     }
 
     throw new Error(`Unknown relation type: ${relationType.name}`);
@@ -205,7 +202,11 @@ export class PremiseNetworkGenerator {
    * Pick a dimension for linear relations
    */
   pickDimension() {
-    const dimensions = this.config.linearDimensions || ['size', 'speed', 'brightness'];
+    const dimensions = this.config.linearDimensions || [
+      "size",
+      "speed",
+      "brightness",
+    ];
     return this.random.pickRandom(dimensions);
   }
 

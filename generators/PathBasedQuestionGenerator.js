@@ -1,11 +1,15 @@
-import { Path } from '../core/Path.js';
-import { Question } from '../models/Question.js';
-import { LinearRelationType } from '../relations/LinearRelationType.js';
-import { SpatialRelationType } from '../relations/SpatialRelationType.js';
-import { CategoricalRelationType } from '../relations/CategoricalRelationType.js';
-import { PremiseNetwork } from '../core/PremiseNetwork.js';
-import { LINEAR_VOCABULARIES, SPATIAL_VOCABULARIES, CATEGORICAL_VOCABULARIES } from '../render/Vocabulary.js';
-import { SpatialGrid } from '../utils/SpatialGrid.js';
+import { Path } from "../core/Path.js";
+import { Question } from "../models/Question.js";
+import { LinearRelationType } from "../relations/LinearRelationType.js";
+import { SpatialRelationType } from "../relations/SpatialRelationType.js";
+import { CategoricalRelationType } from "../relations/CategoricalRelationType.js";
+import { PremiseNetwork } from "../core/PremiseNetwork.js";
+import {
+  LINEAR_VOCABULARIES,
+  SPATIAL_VOCABULARIES,
+  CATEGORICAL_VOCABULARIES,
+} from "../render/Vocabulary.js";
+import { SpatialGrid } from "../utils/SpatialGrid.js";
 
 /**
  * PathBasedQuestionGenerator - new architecture using Path abstraction
@@ -37,13 +41,13 @@ export class PathBasedQuestionGenerator {
     const paths = [];
     const allPremises = [];
     const network = new PremiseNetwork();
-    entities.forEach(e => network.addEntity(e));
+    entities.forEach((e) => network.addEntity(e));
 
     // Available relation types
     const availableRelationTypes = [
       new LinearRelationType(),
       new SpatialRelationType(2),
-      new CategoricalRelationType()
+      new CategoricalRelationType(),
     ];
 
     // Track used relation types to avoid duplicates
@@ -58,16 +62,21 @@ export class PathBasedQuestionGenerator {
       if (usedTypes.size < availableRelationTypes.length) {
         // Pick from unused types
         const unusedTypes = availableRelationTypes.filter(
-          rt => !usedTypes.has(rt.name)
+          (rt) => !usedTypes.has(rt.name),
         );
         relationType = this.random.pickRandom(unusedTypes);
       } else {
         // All types used, create new instances
-        relationType = this.random.pickRandom(availableRelationTypes.map(rt => {
-          if (rt instanceof LinearRelationType) return new LinearRelationType();
-          if (rt instanceof SpatialRelationType) return new SpatialRelationType(2);
-          if (rt instanceof CategoricalRelationType) return new CategoricalRelationType();
-        }));
+        relationType = this.random.pickRandom(
+          availableRelationTypes.map((rt) => {
+            if (rt instanceof LinearRelationType)
+              return new LinearRelationType();
+            if (rt instanceof SpatialRelationType)
+              return new SpatialRelationType(2);
+            if (rt instanceof CategoricalRelationType)
+              return new CategoricalRelationType();
+          }),
+        );
       }
 
       usedTypes.add(relationType.name);
@@ -77,7 +86,7 @@ export class PathBasedQuestionGenerator {
       paths.push(path);
 
       // Add relations to network
-      path.getPremises().forEach(r => network.addRelation(r));
+      path.getPremises().forEach((r) => network.addRelation(r));
       allPremises.push(...path.getPremises());
     }
 
@@ -95,41 +104,55 @@ export class PathBasedQuestionGenerator {
     if (isValid) {
       conclusion = inferredRelation;
     } else {
-      conclusion = this.createInvalidConclusion(conclusionPath, inferredRelation);
+      conclusion = this.createInvalidConclusion(
+        conclusionPath,
+        inferredRelation,
+      );
     }
 
     // DEBUG LOGGING
-    console.log('=== GENERATED MULTI-PATH QUESTION ===');
-    console.log('Number of paths:', numPaths);
-    console.log('Number of entities:', entities.length);
-    console.log('Total premises:', allPremises.length);
-    console.log('Entities:', entities.map(e => e.displayValue));
+    console.log("=== GENERATED MULTI-PATH QUESTION ===");
+    console.log("Number of paths:", numPaths);
+    console.log("Number of entities:", entities.length);
+    console.log("Total premises:", allPremises.length);
+    console.log(
+      "Entities:",
+      entities.map((e) => e.displayValue),
+    );
 
     paths.forEach((path, idx) => {
       console.log(`\nPath ${idx + 1}:`);
-      console.log('  Relation Type:', path.relationType.name);
-      console.log('  Entities:', path.entities.map(e => e.displayValue));
-      console.log('  Vocabulary:', path.vocabulary);
-      if (path.relationType.name === 'Spatial') {
-        console.log('  Grid Layout:');
+      console.log("  Relation Type:", path.relationType.name);
+      console.log(
+        "  Entities:",
+        path.entities.map((e) => e.displayValue),
+      );
+      console.log("  Vocabulary:", path.vocabulary);
+      if (path.relationType.name === "Spatial") {
+        console.log("  Grid Layout:");
         console.log(path.pathProperties.spatialGrid.toString());
-        console.log('  Edge Vectors:', path.pathProperties.edgeVectors);
+        console.log("  Edge Vectors:", path.pathProperties.edgeVectors);
       }
-      console.log('  Premises:');
+      console.log("  Premises:");
       path.getPremises().forEach((p, i) => {
-        console.log(`    ${i+1}. ${p.entities[0].displayValue} [${p.properties.text}] ${p.entities[1].displayValue}`);
+        console.log(
+          `    ${i + 1}. ${p.entities[0].displayValue} [${p.properties.text}] ${p.entities[1].displayValue}`,
+        );
         if (p.properties.vector) {
           console.log(`       Vector:`, p.properties.vector);
         }
       });
     });
 
-    console.log('\nConclusion:', `${conclusion.entities[0].displayValue} [${conclusion.properties.text}] ${conclusion.entities[1].displayValue}`);
+    console.log(
+      "\nConclusion:",
+      `${conclusion.entities[0].displayValue} [${conclusion.properties.text}] ${conclusion.entities[1].displayValue}`,
+    );
     if (conclusion.properties.vector) {
-      console.log('   Inferred Vector:', conclusion.properties.vector);
+      console.log("   Inferred Vector:", conclusion.properties.vector);
     }
-    console.log('Valid?', isValid);
-    console.log('========================\n');
+    console.log("Valid?", isValid);
+    console.log("========================\n");
 
     return new Question({
       network,
@@ -139,11 +162,13 @@ export class PathBasedQuestionGenerator {
       metadata: {
         premiseCount: allPremises.length,
         entityCount: entities.length,
-        relationTypes: paths.map(p => p.relationType.name),
-        isMixed: paths.length > 1 && new Set(paths.map(p => p.relationType.name)).size > 1,
+        relationTypes: paths.map((p) => p.relationType.name),
+        isMixed:
+          paths.length > 1 &&
+          new Set(paths.map((p) => p.relationType.name)).size > 1,
         level: numPaths > 1 ? numPaths : 0,
-        numPaths: numPaths
-      }
+        numPaths: numPaths,
+      },
     });
   }
 
@@ -163,56 +188,58 @@ export class PathBasedQuestionGenerator {
 
     if (relationType instanceof LinearRelationType) {
       // Pick dimension
-      const dimensions = this.config.linearDimensions || ['size', 'speed', 'brightness'];
+      const dimensions = this.config.linearDimensions || [
+        "size",
+        "speed",
+        "brightness",
+      ];
       const dimension = this.random.pickRandom(dimensions);
 
       // Pick vocabulary ONCE for this path
       const vocab = LINEAR_VOCABULARIES[dimension] || LINEAR_VOCABULARIES.size;
       vocabulary = {
-        forward: this.random.pickRandom(vocab.forward),  // e.g., "is less than"
+        forward: this.random.pickRandom(vocab.forward), // e.g., "is less than"
         backward: this.random.pickRandom(vocab.backward), // e.g., "is more than"
-        equal: this.random.pickRandom(vocab.equal)
+        equal: this.random.pickRandom(vocab.equal),
       };
 
       pathProperties = {
-        dimension
+        dimension,
       };
-
     } else if (relationType instanceof SpatialRelationType) {
       // Use grid-based positioning for spatial relations
       const spatialGrid = new SpatialGrid();
       spatialGrid.placeEntitiesRandomly(entities);
 
       // Pick vocabulary style ONCE for consistency
-      const vocabStyle = this.random.pickRandom(['cardinal', 'relative']);
+      const vocabStyle = this.random.pickRandom(["cardinal", "relative"]);
       const vocabSet = SPATIAL_VOCABULARIES[2][vocabStyle];
 
       vocabulary = {
         vocabSet: vocabSet,
-        style: vocabStyle
+        style: vocabStyle,
       };
 
       pathProperties = {
         vocabStyle,
         spatialGrid: spatialGrid, // Store the grid for calculating vectors
-        edgeVectors: [] // Will be filled based on grid positions
+        edgeVectors: [], // Will be filled based on grid positions
       };
 
       // Log grid for debugging
-      console.log('Spatial Grid:', spatialGrid.toString());
-      console.log('Entity Positions:', spatialGrid.getDebugInfo());
-
+      console.log("Spatial Grid:", spatialGrid.toString());
+      console.log("Entity Positions:", spatialGrid.getDebugInfo());
     } else if (relationType instanceof CategoricalRelationType) {
       // Pick vocabulary ONCE
       vocabulary = {
         forward: this.random.pickRandom(CATEGORICAL_VOCABULARIES.same),
         backward: this.random.pickRandom(CATEGORICAL_VOCABULARIES.different),
-        equal: this.random.pickRandom(CATEGORICAL_VOCABULARIES.same)
+        equal: this.random.pickRandom(CATEGORICAL_VOCABULARIES.same),
       };
 
       const same = this.random.coinFlip();
       pathProperties = {
-        same
+        same,
       };
     }
 
@@ -220,7 +247,7 @@ export class PathBasedQuestionGenerator {
       entities,
       relationType,
       pathProperties,
-      vocabulary
+      vocabulary,
     });
   }
 
@@ -238,18 +265,18 @@ export class PathBasedQuestionGenerator {
     spatialGrid.placeEntitiesRandomly(entities);
 
     // Pick vocabulary style
-    const vocabStyle = this.random.pickRandom(['cardinal', 'relative']);
+    const vocabStyle = this.random.pickRandom(["cardinal", "relative"]);
     const vocabSet = SPATIAL_VOCABULARIES[2][vocabStyle];
 
     const vocabulary = {
       vocabSet: vocabSet,
-      style: vocabStyle
+      style: vocabStyle,
     };
 
     // Generate all pairwise relations (only one direction per pair)
     const premises = [];
     const network = new PremiseNetwork();
-    entities.forEach(e => network.addEntity(e));
+    entities.forEach((e) => network.addEntity(e));
 
     // Create relations for all pairs (only i < j to avoid duplicates/contradictions)
     for (let i = 0; i < entities.length; i++) {
@@ -259,12 +286,15 @@ export class PathBasedQuestionGenerator {
 
         const vector = spatialGrid.getVector(entityA, entityB);
         const vectorKey = JSON.stringify(vector);
-        const text = vocabSet[vectorKey] ? vocabSet[vectorKey][0] : 'relates to';
+        const text = vocabSet[vectorKey]
+          ? vocabSet[vectorKey][0]
+          : "relates to";
 
-        const relation = relationType.createRelation(
-          [entityB, entityA],
-          { text, vector, vocabStyle }
-        );
+        const relation = relationType.createRelation([entityB, entityA], {
+          text,
+          vector,
+          vocabStyle,
+        });
 
         premises.push(relation);
         network.addRelation(relation);
@@ -276,8 +306,8 @@ export class PathBasedQuestionGenerator {
 
     // Pick a random subset of premises to show (not all of them)
     const numPremisesToShow = Math.min(
-      numEntities * (numEntities - 1) / 2,  // At most half (undirected pairs)
-      shuffledPremises.length
+      (numEntities * (numEntities - 1)) / 2, // At most half (undirected pairs)
+      shuffledPremises.length,
     );
     const shownPremises = shuffledPremises.slice(0, numPremisesToShow);
 
@@ -285,34 +315,40 @@ export class PathBasedQuestionGenerator {
     const [e1, e2] = this.random.shuffle([...entities]).slice(0, 2);
     const conclusionVector = spatialGrid.getVector(e1, e2);
     const conclusionVectorKey = JSON.stringify(conclusionVector);
-    const conclusionText = vocabSet[conclusionVectorKey] ? vocabSet[conclusionVectorKey][0] : 'relates to';
+    const conclusionText = vocabSet[conclusionVectorKey]
+      ? vocabSet[conclusionVectorKey][0]
+      : "relates to";
 
     // Randomly decide if valid or invalid
     const isValid = this.random.coinFlip();
     let conclusion;
 
     if (isValid) {
-      conclusion = relationType.createRelation(
-        [e2, e1],
-        { text: conclusionText, vector: conclusionVector, vocabStyle }
-      );
+      conclusion = relationType.createRelation([e2, e1], {
+        text: conclusionText,
+        vector: conclusionVector,
+        vocabStyle,
+      });
     } else {
       // Invalid: use wrong vector
-      const wrongVector = conclusionVector.map(v => -v); // Flip direction
+      const wrongVector = conclusionVector.map((v) => -v); // Flip direction
       const wrongVectorKey = JSON.stringify(wrongVector);
-      const wrongText = vocabSet[wrongVectorKey] ? vocabSet[wrongVectorKey][0] : 'relates to';
-      conclusion = relationType.createRelation(
-        [e2, e1],
-        { text: wrongText, vector: wrongVector, vocabStyle }
-      );
+      const wrongText = vocabSet[wrongVectorKey]
+        ? vocabSet[wrongVectorKey][0]
+        : "relates to";
+      conclusion = relationType.createRelation([e2, e1], {
+        text: wrongText,
+        vector: wrongVector,
+        vocabStyle,
+      });
     }
 
-    console.log('=== SPATIAL GRAPH QUESTION ===');
-    console.log('Grid Layout:');
+    console.log("=== SPATIAL GRAPH QUESTION ===");
+    console.log("Grid Layout:");
     console.log(spatialGrid.toString());
-    console.log('Shown premises:', shownPremises.length, '/', premises.length);
-    console.log('Valid?', isValid);
-    console.log('========================\n');
+    console.log("Shown premises:", shownPremises.length, "/", premises.length);
+    console.log("Valid?", isValid);
+    console.log("========================\n");
 
     return new Question({
       network,
@@ -322,11 +358,11 @@ export class PathBasedQuestionGenerator {
       metadata: {
         premiseCount: shownPremises.length,
         entityCount: entities.length,
-        relationTypes: ['Spatial'],
+        relationTypes: ["Spatial"],
         isMixed: false,
-        level: 'spatial-graph',
-        graphType: 'fully-connected'
-      }
+        level: "spatial-graph",
+        graphType: "fully-connected",
+      },
     });
   }
 
@@ -341,10 +377,10 @@ export class PathBasedQuestionGenerator {
     // If valid is "C is more than A", invalid is "A is more than C" (using same word "more")
 
     return path.createRelation(
-      validConclusion.entities[1],     // Swap
-      validConclusion.entities[0],     // Swap
+      validConclusion.entities[1], // Swap
+      validConclusion.entities[0], // Swap
       validConclusion.properties.text, // Keep same text (makes it wrong)
-      validConclusion.properties.direction // Keep same direction semantically
+      validConclusion.properties.direction, // Keep same direction semantically
     );
   }
 }
