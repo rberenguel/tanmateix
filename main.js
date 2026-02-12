@@ -549,6 +549,19 @@ function exportQuestions() {
   // Share using Web Share API if available
   const filename = `tanmateix-questions-${Date.now()}.md`;
 
+  // Helper to download file
+  const downloadFile = () => {
+    const blob = new Blob([markdown], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   if (navigator.share && navigator.canShare) {
     const file = new File([markdown], filename, { type: "text/markdown" });
 
@@ -560,6 +573,8 @@ function exportQuestions() {
         })
         .catch((err) => {
           console.error("Share failed:", err);
+          // Fallback to download on error (permission denied, etc.)
+          downloadFile();
         });
     } else {
       // Fallback: share as text
@@ -570,19 +585,13 @@ function exportQuestions() {
         })
         .catch((err) => {
           console.error("Share failed:", err);
+          // Fallback to download on error
+          downloadFile();
         });
     }
   } else {
     // Fallback: download
-    const blob = new Blob([markdown], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadFile();
   }
 }
 

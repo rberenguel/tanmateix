@@ -46,11 +46,16 @@ export class PathBasedQuestionGenerator {
     entities.forEach((e) => network.addEntity(e));
 
     // Available relation types
+    // Exclude categorical for 4+ entities (boring chains of "same")
     const availableRelationTypes = [
       new LinearRelationType(),
       new SpatialRelationType(2),
-      new CategoricalRelationType(),
     ];
+
+    // Only include categorical for 3 entities (2 premises)
+    if (entitiesPerPath === 3) {
+      availableRelationTypes.push(new CategoricalRelationType());
+    }
 
     // Track used relation types to avoid duplicates
     const usedTypes = new Set();
