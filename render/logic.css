@@ -95,6 +95,7 @@ header {
   opacity: 1;
 }
 
+
 .meta-info {
   font-size: 1.1rem;
   opacity: 0.7;
@@ -111,13 +112,19 @@ header {
   border-radius: 3px;
   margin-top: 10px;
   overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.progress-container:hover {
+  transform: scaleY(1.3);
 }
 
 .progress-bar {
   height: 100%;
   background: var(--accent);
   width: 0%;
-  transition: width 0.3s;
+  transition: width 1s linear, background 0.3s;
 }
 
 /* Logic Game Container */
@@ -138,6 +145,47 @@ header {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+/* Compact mode for 5-6 premises */
+.compact .premises-container {
+  padding: 14px;
+  gap: 8px;
+}
+
+.compact .premise {
+  padding: 8px 12px;
+  gap: 8px;
+}
+
+.compact .conclusion-container {
+  padding: 10px;
+}
+
+.compact .conclusion {
+  padding: 10px;
+  gap: 10px;
+}
+
+/* Very compact mode for 7+ premises */
+.very-compact .premises-container {
+  padding: 10px;
+  gap: 6px;
+}
+
+.very-compact .premise {
+  padding: 6px 10px;
+  gap: 6px;
+  line-height: 1.3;
+}
+
+.very-compact .conclusion-container {
+  padding: 8px;
+}
+
+.very-compact .conclusion {
+  padding: 8px;
+  gap: 8px;
 }
 
 .premises-label {
@@ -353,14 +401,46 @@ header {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .premises-container {
+    padding: 16px;
+    gap: 10px;
+  }
+
   .premise {
-    font-size: 0.95rem;
+    font-size: 1rem;
     padding: 10px 14px;
     gap: 8px;
   }
 
+  .relation {
+    font-size: 0.95rem;
+  }
+
   .conclusion {
-    font-size: 1.05rem;
+    font-size: 1.1rem;
+  }
+
+  /* Compact adjustments for mobile */
+  .compact .premises-container {
+    padding: 12px;
+    gap: 7px;
+  }
+
+  .compact .premise {
+    padding: 7px 10px;
+    gap: 7px;
+  }
+
+  .very-compact .premises-container {
+    padding: 8px;
+    gap: 5px;
+  }
+
+  .very-compact .premise {
+    padding: 5px 8px;
+    gap: 5px;
+    font-size: 0.9rem;
+    line-height: 1.3;
   }
 
   .answer-buttons {
@@ -385,24 +465,54 @@ header {
 
 @media (max-width: 480px) {
   .premise {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     padding: 10px 12px;
     gap: 6px;
   }
 
+  .relation {
+    font-size: 0.9rem;
+  }
+
   .conclusion {
-    font-size: 1rem;
+    font-size: 1.05rem;
     padding: 16px;
   }
 
+  /* Extra compact for very small screens with many premises */
+  .very-compact .premises-container {
+    padding: 6px;
+    gap: 4px;
+  }
+
+  .very-compact .premise {
+    padding: 4px 6px;
+    gap: 4px;
+    font-size: 0.85rem;
+  }
+
+  .very-compact .conclusion {
+    padding: 6px;
+    font-size: 0.95rem;
+  }
+
   .answer-buttons {
-    flex-direction: column;
-    width: 100%;
-    gap: 12px;
+    gap: 16px;
+    justify-content: center;
   }
 
   .btn {
-    width: 100%;
+    min-width: 0;
+    width: auto;
+    padding: 20px 28px;
+  }
+
+  .btn-text {
+    display: none;
+  }
+
+  .btn-icon {
+    font-size: 2rem;
   }
 
   .entity {
@@ -411,7 +521,7 @@ header {
   }
 
   .relation {
-    font-size: 0.8rem;
+    font-size: 1rem;
   }
 
   .stats-footer {
@@ -426,11 +536,11 @@ header {
 
 /* Result Feedback Flash */
 #game-container.flash-correct {
-  animation: flash-correct 0.6s ease-out;
+  animation: flash-correct 0.4s ease-out;
 }
 
 #game-container.flash-incorrect {
-  animation: flash-incorrect 0.6s ease-out;
+  animation: flash-incorrect 0.4s ease-out;
 }
 
 @keyframes flash-correct {
@@ -493,6 +603,31 @@ header {
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
 }
 
+/* Custom scrollbar for modal */
+.modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: #22d3ee;
+}
+
+/* Firefox scrollbar */
+.modal-content {
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) rgba(255, 255, 255, 0.05);
+}
+
 .modal-close {
   position: absolute;
   top: 1rem;
@@ -535,6 +670,13 @@ header {
   gap: 10px;
 }
 
+.version-tag {
+  font-size: 0.7rem;
+  opacity: 0.5;
+  font-weight: normal;
+  color: var(--fg);
+}
+
 .modal-content h2 {
   margin: 0;
   color: var(--accent);
@@ -570,4 +712,62 @@ header {
 
 .source-link a:hover {
   text-decoration: underline;
+}
+
+/* Pause Overlay */
+.pause-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 3000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.pause-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.pause-content {
+  text-align: center;
+  padding: 3rem;
+  border-radius: 16px;
+  background: rgba(26, 26, 26, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  max-width: 90%;
+  width: 500px;
+}
+
+.resume-btn {
+  background: var(--accent);
+  color: #000;
+  border: none;
+  padding: 16px 48px;
+  border-radius: 12px;
+  font-size: 1.3rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+}
+
+.resume-btn:hover {
+  background: #22d3ee;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(56, 189, 248, 0.4);
+}
+
+.resume-btn:active {
+  transform: translateY(0);
 }

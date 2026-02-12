@@ -62,7 +62,9 @@ export class CategoricalRelationType extends RelationType {
   /**
    * Infer transitive relations
    * A=B, B=C => A=C (both same)
-   * A≠B, B=C => A≠C (XOR logic)
+   * A=B, B≠C => A≠C (one different)
+   * A≠B, B=C => A≠C (one different)
+   * A≠B, B≠C => CANNOT INFER (both different)
    */
   infer(relations) {
     const inferred = [];
@@ -76,13 +78,24 @@ export class CategoricalRelationType extends RelationType {
 
         // Check if chainable (r1.end === r2.start)
         if (r1.entities[1].id === r2.entities[0].id) {
-          // XOR: result is same if both relations have same "sameness"
-          const newSame = r1.properties.same === r2.properties.same;
+          // If both are "same", result is "same"
+          // If at least one is "different", result is "different"
+          // If both are "different", we CANNOT infer (skip)
 
-          inferred.push(this.createRelation(
-            [r1.entities[0], r2.entities[1]],
-            { same: newSame }
-          ));
+          if (r1.properties.same && r2.properties.same) {
+            // A=B, B=C => A=C
+            inferred.push(this.createRelation(
+              [r1.entities[0], r2.entities[1]],
+              { same: true }
+            ));
+          } else if (r1.properties.same || r2.properties.same) {
+            // A=B, B≠C => A≠C  OR  A≠B, B=C => A≠C
+            inferred.push(this.createRelation(
+              [r1.entities[0], r2.entities[1]],
+              { same: false }
+            ));
+          }
+          // If both are "different" (A≠B, B≠C), we skip - cannot infer
         }
       }
     }

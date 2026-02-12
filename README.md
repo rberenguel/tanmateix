@@ -27,13 +27,18 @@ The game features various types of logical relationships including:
 
 ### Advanced: Multi-Path Questions
 
-The game supports generating questions with multiple premise paths over the **same 3 entities**. Each path uses a different relationship type (linear, spatial, or categorical), creating more complex logical reasoning challenges.
+The game supports generating questions with multiple premise paths over the **same entities**. Each path uses a different relationship type (linear, spatial, or categorical), and you can configure both the number of paths and the length of each path.
 
-**Example 2-path question:**
+**Example 2-path question (default 3 entities):**
 - **Entity Graph:** A, B, C
 - **Path 1 (Linear):** "A is larger than B", "B is larger than C"
 - **Path 2 (Spatial):** "A is north of B", "B is north of C"
 - **Conclusion:** "A is larger than C?" (from Path 1)
+
+**Example long-path question (5 entities):**
+- **Entity Graph:** A, B, C, D, E
+- **Path 1 (Linear):** "A < B", "B < C", "C < D", "D < E"
+- **Conclusion:** "A is less than E?"
 
 **Try it in the browser console:**
 
@@ -41,18 +46,26 @@ The game supports generating questions with multiple premise paths over the **sa
 // Generate a 2-path question (4 premises over 3 entities)
 window.tanmateix.test2Path()
 
-// Generate a 3-path question (6 premises over 3 entities)
-window.tanmateix.test3Path()
+// Generate a long path (4 premises over 5 entities in one path)
+window.tanmateix.testLongPath(5)
 
-// Set number of paths for subsequent questions
+// Combine both: 2 paths with 4 entities each = 6 premises total
 window.tanmateix.numPaths = 2
+window.tanmateix.entitiesPerPath = 4
 window.tanmateix.newQuestion()
 ```
 
-Each path creates 2 premises over the same 3 entities:
-- 1 path = 2 premises (default single-path)
-- 2 paths = 4 premises (2 different relationship types)
-- 3 paths = 6 premises (all 3 relationship types)
+Configuration options:
+- `numPaths` - Number of different relationship paths (default: 1)
+- `entitiesPerPath` - Number of entities in each path (default: 3)
+- Total premises = `numPaths × (entitiesPerPath - 1)`
+
+Examples:
+- 1 path, 3 entities = 2 premises
+- 2 paths, 3 entities = 4 premises
+- 1 path, 5 entities = 4 premises
+- 2 paths, 4 entities = 6 premises
+- 3 paths, 4 entities = 9 premises
 
 ## Architecture
 

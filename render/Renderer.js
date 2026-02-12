@@ -63,9 +63,18 @@ export class Renderer {
    */
   renderGameUI(question) {
     const rendered = this.renderQuestion(question);
+    const premiseCount = question.premises.length;
+
+    // Determine compactness level based on premise count
+    let compactClass = '';
+    if (premiseCount >= 7) {
+      compactClass = 'very-compact';
+    } else if (premiseCount >= 5) {
+      compactClass = 'compact';
+    }
 
     return `
-      <div class="logic-game">
+      <div class="logic-game ${compactClass}">
         <div class="premises-container">
           <div class="premises-label">Premises:</div>
           ${rendered.premises.join('')}

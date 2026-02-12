@@ -26,11 +26,12 @@ export class PathBasedQuestionGenerator {
   /**
    * Generate a multi-path question with configurable number of paths
    * @param {number} numPaths - Number of paths to generate (default: 1)
-   * Each path creates 2 premises over the SAME 3 entities
+   * @param {number} entitiesPerPath - Number of entities per path (default: 3)
+   * Each path creates (entitiesPerPath - 1) premises over the SAME entities
    */
-  generateMultiPathQuestion(numPaths = 1) {
-    // Always use 3 entities - all paths share the same entity graph
-    const entities = this.entityFactory.createEntities(3);
+  generateMultiPathQuestion(numPaths = 1, entitiesPerPath = 3) {
+    // All paths share the same entity graph
+    const entities = this.entityFactory.createEntities(entitiesPerPath);
 
     // Create paths - all using the same 3 entities
     const paths = [];
@@ -220,6 +221,112 @@ export class PathBasedQuestionGenerator {
       relationType,
       pathProperties,
       vocabulary
+    });
+  }
+
+  /**
+   * Generate a fully-connected spatial graph question
+   * @param {number} numEntities - Number of entities (default: 3)
+   * Creates all pairwise spatial relations (or a subset)
+   */
+  generateSpatialGraphQuestion(numEntities = 3) {
+    const entities = this.entityFactory.createEntities(numEntities);
+    const relationType = new SpatialRelationType(2);
+
+    // Create spatial grid and place all entities
+    const spatialGrid = new SpatialGrid();
+    spatialGrid.placeEntitiesRandomly(entities);
+
+    // Pick vocabulary style
+    const vocabStyle = this.random.pickRandom(['cardinal', 'relative']);
+    const vocabSet = SPATIAL_VOCABULARIES[2][vocabStyle];
+
+    const vocabulary = {
+      vocabSet: vocabSet,
+      style: vocabStyle
+    };
+
+    // Generate all pairwise relations (only one direction per pair)
+    const premises = [];
+    const network = new PremiseNetwork();
+    entities.forEach(e => network.addEntity(e));
+
+    // Create relations for all pairs (only i < j to avoid duplicates/contradictions)
+    for (let i = 0; i < entities.length; i++) {
+      for (let j = i + 1; j < entities.length; j++) {
+        const entityA = entities[i];
+        const entityB = entities[j];
+
+        const vector = spatialGrid.getVector(entityA, entityB);
+        const vectorKey = JSON.stringify(vector);
+        const text = vocabSet[vectorKey] ? vocabSet[vectorKey][0] : 'relates to';
+
+        const relation = relationType.createRelation(
+          [entityB, entityA],
+          { text, vector, vocabStyle }
+        );
+
+        premises.push(relation);
+        network.addRelation(relation);
+      }
+    }
+
+    // Shuffle to make it harder
+    const shuffledPremises = this.random.shuffle(premises);
+
+    // Pick a random subset of premises to show (not all of them)
+    const numPremisesToShow = Math.min(
+      numEntities * (numEntities - 1) / 2,  // At most half (undirected pairs)
+      shuffledPremises.length
+    );
+    const shownPremises = shuffledPremises.slice(0, numPremisesToShow);
+
+    // Pick two random entities for conclusion
+    const [e1, e2] = this.random.shuffle([...entities]).slice(0, 2);
+    const conclusionVector = spatialGrid.getVector(e1, e2);
+    const conclusionVectorKey = JSON.stringify(conclusionVector);
+    const conclusionText = vocabSet[conclusionVectorKey] ? vocabSet[conclusionVectorKey][0] : 'relates to';
+
+    // Randomly decide if valid or invalid
+    const isValid = this.random.coinFlip();
+    let conclusion;
+
+    if (isValid) {
+      conclusion = relationType.createRelation(
+        [e2, e1],
+        { text: conclusionText, vector: conclusionVector, vocabStyle }
+      );
+    } else {
+      // Invalid: use wrong vector
+      const wrongVector = conclusionVector.map(v => -v); // Flip direction
+      const wrongVectorKey = JSON.stringify(wrongVector);
+      const wrongText = vocabSet[wrongVectorKey] ? vocabSet[wrongVectorKey][0] : 'relates to';
+      conclusion = relationType.createRelation(
+        [e2, e1],
+        { text: wrongText, vector: wrongVector, vocabStyle }
+      );
+    }
+
+    console.log('=== SPATIAL GRAPH QUESTION ===');
+    console.log('Grid Layout:');
+    console.log(spatialGrid.toString());
+    console.log('Shown premises:', shownPremises.length, '/', premises.length);
+    console.log('Valid?', isValid);
+    console.log('========================\n');
+
+    return new Question({
+      network,
+      premises: shownPremises,
+      conclusion,
+      isValid,
+      metadata: {
+        premiseCount: shownPremises.length,
+        entityCount: entities.length,
+        relationTypes: ['Spatial'],
+        isMixed: false,
+        level: 'spatial-graph',
+        graphType: 'fully-connected'
+      }
     });
   }
 
