@@ -33,8 +33,7 @@
         </div>
         <div class="header-info">
           <div class="stats">
-            Q<span id="lbl-question">1</span>/100 •
-            <span id="lbl-score">0</span> correct
+            <span id="lbl-question">Q1/50</span>
             <i
               class="ph-light ph-info info-icon"
               id="game-info-btn"
@@ -42,8 +41,11 @@
             ></i>
           </div>
           <div class="meta-info">
-            Streak: <span id="lbl-streak" style="color: var(--gold)">0</span> •
-            L<span id="lbl-level">1</span>
+            Correct: <span id="lbl-score">0</span> • Streak:
+            <span id="lbl-streak" style="color: var(--gold)">0</span> • L<span
+              id="lbl-level"
+              >1</span
+            >
           </div>
         </div>
       </div>
@@ -97,13 +99,26 @@
             • Evaluate if the conclusion logically follows
           </li>
           <li style="margin-bottom: 8px">
-            • Answer <strong>True</strong> or <strong>False</strong> before time
-            runs out
+            • Answer <strong>True</strong> or <strong>False</strong>
           </li>
         </ul>
-        <button id="start-btn" class="resume-btn">Start Game</button>
+        <div
+          style="
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 10px;
+          "
+        >
+          <button id="start-btn-practice" class="resume-btn">
+            <i class="ph-light ph-play"></i>
+          </button>
+          <button id="start-btn-timed" class="resume-btn">
+            <i class="ph-light ph-clock"></i>
+          </button>
+        </div>
         <p style="margin-top: 20px; opacity: 0.6; font-size: 0.9rem">
-          100 questions • Progressive difficulty • Beat the clock
+          50 questions • Progressive difficulty
         </p>
       </div>
     </div>

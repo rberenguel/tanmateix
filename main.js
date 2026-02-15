@@ -6,7 +6,7 @@ import { Renderer } from "./render/Renderer.js";
 // Game state
 const gameState = {
   score: 0,
-  total: 100,
+  total: 50,
   questionNumber: 1,
   currentQuestion: null,
   answered: false,
@@ -19,6 +19,7 @@ const gameState = {
   timer: null,
   timeRemaining: 30,
   isPaused: false,
+  timerEnabled: true, // Whether to use timer or practice mode
   questionHistory: [], // Track all questions for export
 };
 
@@ -198,8 +199,15 @@ async function newQuestion() {
   const debugInfo = document.getElementById("debug-info");
   debugInfo.innerHTML = renderer.renderNetworkInfo(gameState.currentQuestion);
 
-  // Start timer
-  startTimer();
+  // Show/hide timer based on mode
+  const progressContainer = document.querySelector(".progress-container");
+  if (gameState.timerEnabled) {
+    progressContainer.style.display = "block";
+    startTimer();
+  } else {
+    // Practice mode: hide timer
+    progressContainer.style.display = "none";
+  }
 }
 
 // Timer functions
@@ -231,6 +239,7 @@ function startTimer() {
 // Pause/Resume functions
 function togglePause() {
   if (gameState.answered) return; // Can't pause between questions
+  if (!gameState.timerEnabled) return; // No pause in practice mode
 
   gameState.isPaused = !gameState.isPaused;
   const overlay = document.getElementById("pause-overlay");
@@ -440,7 +449,7 @@ function updateScore() {
 function updateProgress() {
   // Update question counter
   document.getElementById("lbl-question").textContent =
-    gameState.questionNumber;
+    `Q${gameState.questionNumber}/${gameState.total}`;
 }
 
 // Show game over
@@ -476,14 +485,33 @@ function showGameOver() {
         <div style="font-size: 1rem; margin-bottom: 30px; opacity: 0.8;">
             ${percentage >= 80 ? "Outstanding reasoning!" : percentage >= 60 ? "Great job!" : "Keep practicing!"}
         </div>
-        <button id="play-again-btn" class="resume-btn">Play Again</button>
+        <div style="display: flex; gap: 15px; justify-content: center;">
+          <button id="play-again-practice" class="resume-btn">
+            <i class="ph-light ph-play"></i>
+          </button>
+          <button id="play-again-timed" class="resume-btn">
+            <i class="ph-light ph-clock"></i>
+          </button>
+        </div>
     </div>
 `;
 
-  // Add event listener to Play Again button
+  // Add event listeners to Play Again buttons
   document
-    .getElementById("play-again-btn")
-    .addEventListener("click", restartGame);
+    .getElementById("play-again-practice")
+    .addEventListener("click", () => {
+      gameState.timerEnabled = false;
+      // Hide timer before restarting
+      document.querySelector(".progress-container").style.display = "none";
+      restartGame();
+    });
+
+  document.getElementById("play-again-timed").addEventListener("click", () => {
+    gameState.timerEnabled = true;
+    // Show timer before restarting
+    document.querySelector(".progress-container").style.display = "block";
+    restartGame();
+  });
 }
 
 // Restart game function
@@ -501,7 +529,10 @@ function restartGame() {
   updateProgress();
   updateStreak();
   updateLevel();
-  newQuestion();
+
+  // Show start screen to choose mode again
+  const startScreen = document.getElementById("start-screen");
+  startScreen.classList.add("visible");
 }
 
 // Export question history as markdown
@@ -692,12 +723,24 @@ window.showVerificationError = (errorMessage) => {
   }
 };
 
-// Start game handler
-const startBtn = document.getElementById("start-btn");
+// Start game handlers
+const startBtnPractice = document.getElementById("start-btn-practice");
+const startBtnTimed = document.getElementById("start-btn-timed");
 const startScreen = document.getElementById("start-screen");
 
-startBtn.addEventListener("click", () => {
+startBtnPractice.addEventListener("click", () => {
+  gameState.timerEnabled = false;
   startScreen.classList.remove("visible");
+  // Hide timer in practice mode
+  document.querySelector(".progress-container").style.display = "none";
+  newQuestion();
+});
+
+startBtnTimed.addEventListener("click", () => {
+  gameState.timerEnabled = true;
+  startScreen.classList.remove("visible");
+  // Show timer in timed mode
+  document.querySelector(".progress-container").style.display = "block";
   newQuestion();
 });
 
