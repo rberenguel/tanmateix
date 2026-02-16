@@ -3,6 +3,40 @@ import { RandomUtils } from "./utils/RandomUtils.js";
 import { EntityFactory } from "./utils/EntityFactory.js";
 import { Renderer } from "./render/Renderer.js";
 
+// Timing milestones for linear interpolation
+const TIERS = [
+  { level: 1, linear: 4.0, spatial: 6.0, buffer: 4.0 },
+  { level: 4, linear: 3.0, spatial: 4.5, buffer: 3.0 },
+  { level: 7, linear: 2.0, spatial: 3.0, buffer: 2.5 },
+  { level: 10, linear: 1.5, spatial: 2.25, buffer: 2.0 },
+];
+
+function getTimingConfig(currentLevel) {
+  // 1. Handle "Grandmaster" territory (Level 10+)
+  if (currentLevel >= 10) {
+    return TIERS[TIERS.length - 1]; // Cap at the hardest setting
+  }
+
+  // 2. Find which two tiers we are sandwiched between
+  // We look for the first tier that is *higher* than our current level
+  let upperIndex = TIERS.findIndex((t) => t.level > currentLevel);
+  let lowerTier = TIERS[upperIndex - 1];
+  let upperTier = TIERS[upperIndex];
+
+  // 3. Calculate how far we are between them (0.0 to 1.0)
+  let range = upperTier.level - lowerTier.level;
+  let progress = (currentLevel - lowerTier.level) / range;
+
+  // 4. Lerp (Linear Interpolate) the values
+  const lerp = (start, end, pct) => start + (end - start) * pct;
+
+  return {
+    linear: lerp(lowerTier.linear, upperTier.linear, progress),
+    spatial: lerp(lowerTier.spatial, upperTier.spatial, progress),
+    buffer: lerp(lowerTier.buffer, upperTier.buffer, progress),
+  };
+}
+
 // Game state
 const gameState = {
   score: 0,
@@ -11,10 +45,11 @@ const gameState = {
   currentQuestion: null,
   answered: false,
   consecutiveCorrect: 0,
+  maxStreak: 0, // Track highest streak achieved
   difficulty: {
-    numPaths: 1,
-    entitiesPerPath: 3,
-    timeLimit: 30,
+    level: 1, // Overall difficulty level (1-10+)
+    numPaths: 1, // Number of independent paths (1-5)
+    entitiesPerPath: 3, // Entities per path (3-5)
   },
   timer: null,
   timeRemaining: 30,
@@ -69,6 +104,38 @@ const generator = new PathBasedQuestionGenerator({
 });
 
 const renderer = new Renderer();
+
+// Calculate time limit based on question and difficulty level
+function calculateTimeLimit(question, level) {
+  // Get interpolated timing config for this level
+  const config = getTimingConfig(level);
+
+  // Count premises (including the conclusion/question)
+  const numPremises = question.premises.length + 1;
+
+  // Detect relation type (check first premise)
+  const relationType =
+    question.premises[0]?.type?.constructor?.name || "LinearRelationType";
+  const isSpatial = relationType === "SpatialRelationType";
+
+  // Get base TPP for relation type
+  const tpp = isSpatial ? config.spatial : config.linear;
+
+  // Apply scroll discount for premises > 10
+  // Premises 1-10: Full TPP
+  // Premises 11+: 75% TPP (scanning/searching time)
+  let premiseTime;
+  if (numPremises <= 10) {
+    premiseTime = numPremises * tpp;
+  } else {
+    // First 10 at full TPP, rest at 75%
+    premiseTime = 10 * tpp + (numPremises - 10) * tpp * 0.75;
+  }
+
+  const timeLimit = Math.ceil(premiseTime + config.buffer);
+
+  return timeLimit;
+}
 
 // Expose API for testing different configurations
 window.tanmateix = {
@@ -178,13 +245,28 @@ window.tanmateix = {
 // Generate and display question
 async function newQuestion() {
   // Use difficulty settings
-  const { numPaths, entitiesPerPath, timeLimit } = gameState.difficulty;
+  const { numPaths, entitiesPerPath, level } = gameState.difficulty;
   gameState.currentQuestion = await generator.generateMultiPathQuestion(
     numPaths,
     entitiesPerPath,
   );
   gameState.answered = false;
+
+  // Calculate time limit dynamically based on question and level
+  const timeLimit = calculateTimeLimit(gameState.currentQuestion, level);
   gameState.timeRemaining = timeLimit;
+
+  // Log timing info (helpful for debugging)
+  const relationType =
+    gameState.currentQuestion.premises[0]?.type?.constructor?.name || "Unknown";
+  const numPremises = gameState.currentQuestion.premises.length + 1;
+  const scrollDiscount = numPremises > 10 ? " 📜" : "";
+  const config = getTimingConfig(level);
+  const tppUsed =
+    relationType === "SpatialRelationType" ? config.spatial : config.linear;
+  console.log(
+    `⏱️  Time: ${timeLimit}s (L${level}, ${numPremises}p × ${tppUsed.toFixed(2)}s + ${config.buffer.toFixed(1)}s${scrollDiscount})`,
+  );
 
   // Render
   const container = document.getElementById("game-container");
@@ -248,10 +330,11 @@ function togglePause() {
     overlay.classList.add("visible");
   } else {
     // Add 5 seconds on resume (capped at time limit)
-    gameState.timeRemaining = Math.min(
-      gameState.timeRemaining + 5,
-      gameState.difficulty.timeLimit,
+    const timeLimit = calculateTimeLimit(
+      gameState.currentQuestion,
+      gameState.difficulty.level,
     );
+    gameState.timeRemaining = Math.min(gameState.timeRemaining + 5, timeLimit);
     updateTimerDisplay(true); // Instant update on resume
 
     overlay.classList.remove("visible");
@@ -260,8 +343,11 @@ function togglePause() {
 
 function updateTimerDisplay(instant = false) {
   const progressBar = document.getElementById("progress");
-  const percentage =
-    (gameState.timeRemaining / gameState.difficulty.timeLimit) * 100;
+  // Calculate time limit for current question
+  const timeLimit = gameState.currentQuestion
+    ? calculateTimeLimit(gameState.currentQuestion, gameState.difficulty.level)
+    : 30; // fallback for initialization
+  const percentage = (gameState.timeRemaining / timeLimit) * 100;
 
   // Disable transition for instant updates (start/resume)
   if (instant) {
@@ -288,6 +374,9 @@ function updateTimerDisplay(instant = false) {
 function handleTimeout() {
   gameState.answered = true;
   gameState.consecutiveCorrect = 0;
+
+  // Decrease difficulty on timeout
+  decreaseDifficulty();
 
   // Track question for export (timeout = wrong answer)
   gameState.questionHistory.push({
@@ -344,17 +433,25 @@ function handleAnswer(e) {
   if (correct) {
     gameState.score++;
     gameState.consecutiveCorrect++;
+
+    // Track max streak
+    if (gameState.consecutiveCorrect > gameState.maxStreak) {
+      gameState.maxStreak = gameState.consecutiveCorrect;
+    }
+
     updateScore();
 
-    // Check for difficulty increase (every 10 correct)
+    // Check for difficulty increase (every 2 correct)
     if (
       gameState.consecutiveCorrect > 0 &&
-      gameState.consecutiveCorrect % 10 === 0
+      gameState.consecutiveCorrect % 2 === 0
     ) {
       increaseDifficulty();
     }
   } else {
     gameState.consecutiveCorrect = 0;
+    // Decrease difficulty on wrong answer
+    decreaseDifficulty();
   }
 
   // Visual feedback
@@ -380,33 +477,90 @@ function handleAnswer(e) {
   }, 400);
 }
 
-// Increase difficulty
+// Increase difficulty (every 2 correct answers)
 function increaseDifficulty() {
   const diff = gameState.difficulty;
+
+  // Build weighted options: 50% level, 25% entities, 25% paths
+  // Each entry represents its probability
   const options = [];
 
-  // Check which dimensions can be increased
-  if (diff.numPaths < 3) options.push("paths");
+  // Level always available (50% chance = 2 entries)
+  options.push("level", "level");
+
+  // Entities (25% chance = 1 entry)
   if (diff.entitiesPerPath < 5) options.push("entities");
-  if (diff.timeLimit > 10) options.push("time");
+
+  // Paths (25% chance = 1 entry)
+  if (diff.numPaths < 5) options.push("paths");
 
   if (options.length === 0) {
     console.log("🏆 Maximum difficulty reached!");
     return;
   }
 
-  // Randomly pick one dimension to increase
+  // Weighted random selection
   const dimension = options[Math.floor(Math.random() * options.length)];
 
-  if (dimension === "paths") {
+  if (dimension === "level") {
+    diff.level++;
+    console.log(`📊 Level ${diff.level} (⏱️  tighter timing)`);
+  } else if (dimension === "paths") {
     diff.numPaths++;
-    console.log(`📈 Difficulty increased: ${diff.numPaths} paths`);
+    console.log(
+      `📈 Difficulty +1: ${diff.numPaths} paths (🔀 more confounders)`,
+    );
   } else if (dimension === "entities") {
     diff.entitiesPerPath++;
-    console.log(`📈 Difficulty increased: ${diff.entitiesPerPath} entities`);
-  } else if (dimension === "time") {
-    diff.timeLimit -= 5;
-    console.log(`📈 Difficulty increased: ${diff.timeLimit}s timer`);
+    console.log(
+      `📈 Difficulty +1: ${diff.entitiesPerPath} entities per path (⛓️  longer chains)`,
+    );
+  }
+
+  updateLevel();
+}
+
+// Decrease difficulty (on wrong answer or timeout)
+function decreaseDifficulty() {
+  const diff = gameState.difficulty;
+
+  // Build weighted options: 50% level, 25% entities, 25% paths
+  // Each entry represents its probability
+  const options = [];
+
+  // Level (50% chance = 2 entries) - only if above minimum
+  if (diff.level > 1) {
+    options.push("level", "level");
+  }
+
+  // Entities (25% chance = 1 entry)
+  if (diff.entitiesPerPath > 3) options.push("entities");
+
+  // Paths (25% chance = 1 entry)
+  if (diff.numPaths > 1) options.push("paths");
+
+  // Don't decrease if already at minimum
+  if (options.length === 0) {
+    console.log("💪 Already at minimum difficulty");
+    return;
+  }
+
+  // Weighted random selection
+  const dimension = options[Math.floor(Math.random() * options.length)];
+
+  if (dimension === "level") {
+    diff.level--;
+    console.log(`📊 Level ${diff.level} (⏱️  more time)`);
+  } else if (dimension === "paths") {
+    diff.numPaths--;
+    console.log(
+      `📉 Difficulty -1: ${diff.numPaths} paths (🔀 fewer confounders)`,
+    );
+  } else if (dimension === "entities") {
+    diff.entitiesPerPath--;
+    console.log(
+      `📉 Difficulty -1: ${diff.entitiesPerPath} entities per path (⛓️  shorter chains)`,
+    );
   }
 
   updateLevel();
@@ -414,13 +568,7 @@ function increaseDifficulty() {
 
 // Update level display
 function updateLevel() {
-  const diff = gameState.difficulty;
-  const level =
-    diff.numPaths -
-    1 +
-    (diff.entitiesPerPath - 3) +
-    Math.floor((30 - diff.timeLimit) / 5);
-  document.getElementById("lbl-level").textContent = level + 1;
+  document.getElementById("lbl-level").textContent = gameState.difficulty.level;
 }
 
 // Update streak display
@@ -457,12 +605,7 @@ function showGameOver() {
   clearInterval(gameState.timer);
   const container = document.getElementById("game-container");
   const percentage = Math.round((gameState.score / gameState.total) * 100);
-  const finalLevel =
-    gameState.difficulty.numPaths -
-    1 +
-    (gameState.difficulty.entitiesPerPath - 3) +
-    Math.floor((30 - gameState.difficulty.timeLimit) / 5) +
-    1;
+  const finalLevel = gameState.difficulty.level;
 
   container.innerHTML = `
     <div class="premises-container" style="text-align: center; padding: 40px;">
@@ -477,7 +620,7 @@ function showGameOver() {
             Accuracy: <span style="color: var(--accent); font-weight: bold;">${percentage}%</span>
         </div>
         <div style="font-size: 1.1rem; margin-bottom: 20px; opacity: 0.8;">
-            Max Streak: <span style="color: var(--gold); font-weight: bold;">${Math.floor(gameState.score / 10) * 10}</span>
+            Max Streak: <span style="color: var(--gold); font-weight: bold;">${gameState.maxStreak}</span>
         </div>
         <div style="font-size: 1.1rem; margin-bottom: 30px; opacity: 0.7;">
             Final Level: <span style="font-weight: bold;">${finalLevel}</span>
@@ -519,11 +662,12 @@ function restartGame() {
   gameState.score = 0;
   gameState.questionNumber = 1;
   gameState.consecutiveCorrect = 0;
+  gameState.maxStreak = 0;
   gameState.questionHistory = []; // Clear question history
   gameState.difficulty = {
+    level: 1,
     numPaths: 1,
     entitiesPerPath: 3,
-    timeLimit: 30,
   };
   updateScore();
   updateProgress();

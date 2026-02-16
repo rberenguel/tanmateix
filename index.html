@@ -138,6 +138,10 @@
 
     <div id="debug-info" style="display: none"></div>
 
+    <div id="update-banner" hidden>
+      Update available — <a href="#" id="update-link">reload</a>
+    </div>
+
     <!-- Info Modal -->
     <div id="info-modal" class="modal-overlay">
       <div class="modal-content">
@@ -261,5 +265,40 @@
     <!-- Load Tau Prolog for relation type inference -->
     <script src="lib/tau-prolog-core.js"></script>
     <script src="main.js" type="module"></script>
+
+    <script>
+      if ("serviceWorker" in navigator && !chrome?.runtime?.id) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("./sw.js")
+            .then((registration) => {
+              // Listen for new service worker installing
+              registration.addEventListener("updatefound", () => {
+                const newWorker = registration.installing;
+                if (!newWorker) return;
+
+                newWorker.addEventListener("statechange", () => {
+                  // New SW is active and there was a previous controller
+                  if (
+                    newWorker.state === "activated" &&
+                    navigator.serviceWorker.controller
+                  ) {
+                    document.getElementById("update-banner").hidden = false;
+                  }
+                });
+              });
+            })
+            .catch((err) => console.error("SW registration failed:", err));
+        });
+
+        // Reload when user clicks the update link
+        document
+          .getElementById("update-link")
+          .addEventListener("click", (e) => {
+            e.preventDefault();
+            window.location.reload();
+          });
+      }
+    </script>
   </body>
 </html>

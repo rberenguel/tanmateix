@@ -776,3 +776,27 @@ header {
 .resume-btn:active {
   transform: translateY(0);
 }
+
+/* Update banner */
+#update-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #1e293b;
+  color: var(--success);
+  padding: 8px 12px;
+  text-align: center;
+  font-size: 0.9em;
+  z-index: 1000;
+  border-top: 1px solid var(--accent);
+}
+
+#update-banner a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+#update-banner a:hover {
+  color: #22d3ee;
+}
