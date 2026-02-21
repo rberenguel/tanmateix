@@ -279,6 +279,7 @@ header {
 /* Answer Buttons */
 .answer-buttons {
   display: flex;
+  flex-wrap: wrap;
   gap: 20px;
   justify-content: center;
   margin-top: 10px;
@@ -329,6 +330,35 @@ header {
 
 .btn-false:active {
   transform: translateY(0);
+}
+
+.btn-indeterminate {
+  background: #7c3aed;
+  color: #fff;
+}
+
+.btn-indeterminate:hover {
+  background: #6d28d9;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+}
+
+.btn-indeterminate:active {
+  transform: translateY(0);
+}
+
+.btn-shrug {
+  font-family: "Monoid", monospace;
+  font-size: 0.75em;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .btn-shrug {
+    display: none;
+  }
 }
 
 .btn-icon {

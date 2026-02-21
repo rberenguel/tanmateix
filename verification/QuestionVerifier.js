@@ -326,6 +326,25 @@ export class QuestionVerifier {
         }
       }
 
+      // Handle indeterminate questions: verify neither direction is provable
+      if (question.isIndeterminate) {
+        const [c1, c2] = [
+          question.conclusion.entities[0].id,
+          question.conclusion.entities[1].id,
+        ];
+        const forwardProvable = lessThan.get(c1)?.has(c2) ?? false;
+        const backwardProvable = lessThan.get(c2)?.has(c1) ?? false;
+        if (!forwardProvable && !backwardProvable) {
+          return { valid: true };
+        } else {
+          return {
+            valid: false,
+            error: "Marked indeterminate but one direction is provable",
+            details: { c1, c2, forwardProvable, backwardProvable },
+          };
+        }
+      }
+
       // Check conclusion
       const [c1, c2] = [
         question.conclusion.entities[0].id,

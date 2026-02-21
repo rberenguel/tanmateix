@@ -36,6 +36,10 @@ The game features various types of logical relationships including:
   - **Disjoint** — "FOBIX are never GAKUN" (A ∩ B = ∅)
   - Valid inferences: Barbara (A⊂B, B⊂C → A⊂C) and Celarent (A⊂B, B∩C=∅ → A∩C=∅)
 
+### Indeterminate Questions ¯\_(ツ)\_/¯
+
+Some questions are genuinely underdetermined — the premises don't establish any ordering between the conclusion entities. These require a third answer: **Cannot be determined** (the shrug button). Selecting True or False on an indeterminate question is wrong; selecting True or False on a normal question is also wrong — the shrug button is always visible to avoid revealing the question type.
+
 ### Advanced: Multi-Path Questions
 
 The game supports generating questions with multiple premise paths over the **same entities**. Each path uses a different relationship type (linear, spatial, or syllogistic), and you can configure both the number of paths and the length of each path.

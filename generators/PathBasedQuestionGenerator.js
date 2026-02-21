@@ -44,6 +44,11 @@ export class PathBasedQuestionGenerator {
   ) {
     const { forceRelationType } = options;
 
+    // ~25% chance of generating an indeterminate question (Linear, single-path only)
+    if (numPaths === 1 && entitiesPerPath >= 3 && this.random.random() < 0.25) {
+      return await this.generateIndeterminateLinearQuestion(entitiesPerPath);
+    }
+
     // All paths share the same entity graph
     const entities = this.entityFactory.createEntities(entitiesPerPath);
 
@@ -257,6 +262,101 @@ export class PathBasedQuestionGenerator {
       console.warn(`⚠️  ${relationType} verification:`, verification.warning);
     } else {
       console.log(`✓ ${relationType} question verified`);
+    }
+
+    return question;
+  }
+
+  /**
+   * Generate an indeterminate linear question using a hub-merge shape.
+   * Hub = entities[N-2]; left chain feeds into hub; last entity also feeds into hub.
+   * The two leaf endpoints (first and last entity) have no transitive connection.
+   */
+  async generateIndeterminateLinearQuestion(entitiesPerPath) {
+    const entities = this.entityFactory.createEntities(entitiesPerPath);
+
+    const dimensions = this.config.linearDimensions || [
+      "size",
+      "speed",
+      "brightness",
+    ];
+    const dimension = this.random.pickRandom(dimensions);
+    const vocab = LINEAR_VOCABULARIES[dimension] || LINEAR_VOCABULARIES.size;
+    const forwardText = this.random.pickRandom(vocab.forward);
+    const backwardText = this.random.pickRandom(vocab.backward);
+
+    const linType = new LinearRelationType();
+    const network = new PremiseNetwork();
+    entities.forEach((e) => network.addEntity(e));
+
+    const hubIdx = entitiesPerPath - 2;
+    const premises = [];
+
+    // Left chain: entities[0..hubIdx] all pointing toward hub
+    for (let i = 0; i < hubIdx; i++) {
+      const rel = linType.createRelation([entities[i], entities[i + 1]], {
+        dimension,
+        direction: 1,
+        text: forwardText,
+      });
+      premises.push(rel);
+      network.addRelation(rel);
+    }
+
+    // Right branch: last entity → hub
+    const rightRel = linType.createRelation(
+      [entities[entitiesPerPath - 1], entities[hubIdx]],
+      {
+        dimension,
+        direction: 1,
+        text: forwardText,
+      },
+    );
+    premises.push(rightRel);
+    network.addRelation(rightRel);
+
+    const shuffledPremises = this.random.shuffle(premises);
+
+    // Conclusion between the two leaf endpoints (genuinely indeterminate)
+    const leaf0 = entities[0];
+    const leafN = entities[entitiesPerPath - 1];
+    const useForward = this.random.coinFlip();
+    const conclusion = useForward
+      ? linType.createRelation([leaf0, leafN], {
+          dimension,
+          direction: 1,
+          text: forwardText,
+        })
+      : linType.createRelation([leafN, leaf0], {
+          dimension,
+          direction: -1,
+          text: backwardText,
+        });
+
+    const question = new Question({
+      network,
+      premises: shuffledPremises,
+      conclusion,
+      isValid: false,
+      isIndeterminate: true,
+      metadata: {
+        premiseCount: premises.length,
+        entityCount: entities.length,
+        relationTypes: ["Linear"],
+        isMixed: false,
+        level: 0,
+        numPaths: 1,
+      },
+    });
+
+    const verification = await this.verifier.verifyQuestion(question);
+    if (!verification.valid) {
+      console.error(
+        "❌ INDETERMINATE VERIFICATION FAILED:",
+        verification.error,
+      );
+    } else {
+      console.log("✓ Indeterminate question verified");
     }
 
     return question;

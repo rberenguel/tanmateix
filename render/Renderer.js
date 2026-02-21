@@ -90,12 +90,16 @@ export class Renderer {
 
         <div class="answer-buttons">
           <button class="btn btn-true" data-answer="true">
-            <span class="btn-icon">✓</span>
+            <i class="ph-light ph-check btn-icon"></i>
             <span class="btn-text">True</span>
           </button>
           <button class="btn btn-false" data-answer="false">
-            <span class="btn-icon">✗</span>
+            <i class="ph-light ph-x btn-icon"></i>
             <span class="btn-text">False</span>
+          </button>
+          <button class="btn btn-indeterminate" data-answer="indeterminate">
+            <i class="ph-light ph-question-mark btn-icon"></i>
+            <span class="btn-shrug">¯\\_(ツ)_/¯</span>
           </button>
         </div>
 

@@ -15,6 +15,7 @@ export class Question {
     this.premises = data.premises;
     this.conclusion = data.conclusion;
     this.isValid = data.isValid;
+    this.isIndeterminate = data.isIndeterminate || false;
     this.metadata = data.metadata || {};
     this.timestamp = Date.now();
   }

@@ -138,7 +138,11 @@ function calculateTimeLimit(question, level) {
     premiseTime = 10 * tpp + (numPremises - 10) * tpp * 0.75;
   }
 
-  const timeLimit = Math.ceil(premiseTime + config.buffer);
+  let timeLimit = Math.ceil(premiseTime + config.buffer);
+
+  if (question.isIndeterminate) {
+    timeLimit = Math.ceil(timeLimit * 1.2);
+  }
 
   return timeLimit;
 }
@@ -420,7 +424,9 @@ function handleTimeout() {
     questionNumber: gameState.questionNumber,
     question: gameState.currentQuestion,
     userAnswer: null, // timeout
-    correctAnswer: gameState.currentQuestion.isValid,
+    correctAnswer: gameState.currentQuestion.isIndeterminate
+      ? "indeterminate"
+      : gameState.currentQuestion.isValid,
     correct: false,
   });
 
@@ -451,8 +457,14 @@ function handleTimeout() {
 function handleAnswer(e) {
   if (gameState.answered) return;
 
-  const userAnswer = e.currentTarget.dataset.answer === "true";
-  const correct = userAnswer === gameState.currentQuestion.isValid;
+  const answerStr = e.currentTarget.dataset.answer; // "true", "false", "indeterminate"
+  const q = gameState.currentQuestion;
+  let correct;
+  if (q.isIndeterminate) {
+    correct = answerStr === "indeterminate";
+  } else {
+    correct = (answerStr === "true") === q.isValid;
+  }
 
   gameState.answered = true;
   clearInterval(gameState.timer);
@@ -461,8 +473,8 @@ function handleAnswer(e) {
   gameState.questionHistory.push({
     questionNumber: gameState.questionNumber,
     question: gameState.currentQuestion,
-    userAnswer: userAnswer,
-    correctAnswer: gameState.currentQuestion.isValid,
+    userAnswer: answerStr,
+    correctAnswer: q.isIndeterminate ? "indeterminate" : q.isValid,
     correct: correct,
   });
 
