@@ -22,6 +22,7 @@ Given a core question about entities `[A, B, C]` with conclusion `A > C`:
 - Inject them into `shuffledPremises`.
 
 Example distractor that is "safe":
+
 - `D is larger than B` — connects D to B, but D is not in the conclusion.
 - The player must identify that D is irrelevant to the A–C conclusion.
 
@@ -34,6 +35,7 @@ A distractor premise `D > B` is **unsafe** if it, combined with existing premise
 **Safe generation rule (simple):** Distractors only involve at least one brand-new entity (one that does not appear in the conclusion). This guarantees they cannot shorten the A–C path.
 
 Specifically:
+
 - Always create at least one new "distractor entity" per distractor premise.
 - The distractor entity can relate to any existing entity except it must not bridge the conclusion gap.
 - Since the distractor entity is new, it can't form a transitive bridge between the two conclusion entities via existing premises alone.
@@ -44,9 +46,9 @@ This is conservative but sound: the distractor can safely reference existing ent
 
 ## Configuration
 
-| Parameter | Default | Range |
-|-----------|---------|-------|
-| `numDistractors` | 1 | 0–2 |
+| Parameter                         | Default      | Range                 |
+| --------------------------------- | ------------ | --------------------- |
+| `numDistractors`                  | 1            | 0–2                   |
 | Probability of having distractors | configurable | e.g. 50% of questions |
 
 Initially: always inject exactly 1 distractor for questions at difficulty level ≥ 3. Scale to 2 distractors at higher levels. (Difficulty progression is managed in `main.js`.)
@@ -84,6 +86,7 @@ No changes required — the verifier already filters premises by type when verif
 ### 4. `main.js`
 
 Pass `numDistractors` into `generateMultiPathQuestion()` based on difficulty level:
+
 - `level < 3`: 0 distractors
 - `3 ≤ level < 6`: 1 distractor (50% of questions)
 - `level ≥ 6`: 1–2 distractors (always present)
@@ -94,23 +97,25 @@ Adjust timing: each distractor premise adds a small time bonus (e.g. `+0.5 × TP
 
 ## Edge Cases
 
-| Scenario | Decision |
-|----------|----------|
-| Multi-path question (numPaths > 1) | Already has multiple entity sets mixed together. Distractors add noise on top — safe since the safety rule (new entities only) still holds. |
+| Scenario                                              | Decision                                                                                                                                                       |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Multi-path question (numPaths > 1)                    | Already has multiple entity sets mixed together. Distractors add noise on top — safe since the safety rule (new entities only) still holds.                    |
 | Same-type distractor that accidentally closes the gap | Prevented by the rule: distractor entities are always new. If distractor references only existing non-conclusion entities (e.g. B), it still can't bridge A→C. |
-| Spatial distractors in a Linear question | Allowed — a spatial fact about D adds visual noise without logical impact on the linear conclusion. |
-| Distractor entity in the displayed premise list | Must be visually indistinguishable from core premises. The player has to figure out it's irrelevant. Do NOT label distractors. |
-| Very long paths (5+ entities) | Distractors may be less effective since the player is already overwhelmed. Keep to 1 maximum for paths with 5+ entities. |
+| Spatial distractors in a Linear question              | Allowed — a spatial fact about D adds visual noise without logical impact on the linear conclusion.                                                            |
+| Distractor entity in the displayed premise list       | Must be visually indistinguishable from core premises. The player has to figure out it's irrelevant. Do NOT label distractors.                                 |
+| Very long paths (5+ entities)                         | Distractors may be less effective since the player is already overwhelmed. Keep to 1 maximum for paths with 5+ entities.                                       |
 
 ---
 
 ## Example
 
 **Core premises (about FOBIX, GAKUN, JEPOL):**
+
 - GAKUN is larger than FOBIX
 - GAKUN is smaller than JEPOL
 
 **Distractor (about MIVAT — irrelevant entity):**
+
 - MIVAT is larger than GAKUN
 
 **Conclusion:** Is JEPOL larger than FOBIX?

@@ -11,13 +11,13 @@ The current Linear relation uses `direction: 1` (strictly greater) and `directio
 
 Non-strict variants add two new semantic states:
 
-| Direction value | Meaning | Example |
-|----------------|---------|---------|
-| `1`  | A strictly greater than B | "A is larger than B" |
-| `-1` | A strictly less than B    | "A is smaller than B" |
-| `2`  | A ≥ B (not strictly less) | "A is not smaller than B" |
-| `-2` | A ≤ B (not strictly greater) | "A is not larger than B" |
-| `0`  | A = B (equal)             | "A is the same size as B" (existing, unchanged) |
+| Direction value | Meaning                      | Example                                         |
+| --------------- | ---------------------------- | ----------------------------------------------- |
+| `1`             | A strictly greater than B    | "A is larger than B"                            |
+| `-1`            | A strictly less than B       | "A is smaller than B"                           |
+| `2`             | A ≥ B (not strictly less)    | "A is not smaller than B"                       |
+| `-2`            | A ≤ B (not strictly greater) | "A is not larger than B"                        |
+| `0`             | A = B (equal)                | "A is the same size as B" (existing, unchanged) |
 
 The cognitive load: players must track whether premises license a strict or non-strict conclusion, which demands one extra mental computation per chain link.
 
@@ -25,12 +25,12 @@ The cognitive load: players must track whether premises license a strict or non-
 
 ## Inference Rules for Mixed Chains
 
-| Edge 1 | Edge 2 | Conclusion |
-|--------|--------|------------|
-| A > B (strict)  | B > C (strict)  | A > C (strict) |
-| A > B (strict)  | B ≥ C (non-strict) | A > C (strict) |
-| A ≥ B (non-strict) | B > C (strict) | A > C (strict) |
-| A ≥ B (non-strict) | B ≥ C (non-strict) | A ≥ C (non-strict) |
+| Edge 1             | Edge 2             | Conclusion                                     |
+| ------------------ | ------------------ | ---------------------------------------------- |
+| A > B (strict)     | B > C (strict)     | A > C (strict)                                 |
+| A > B (strict)     | B ≥ C (non-strict) | A > C (strict)                                 |
+| A ≥ B (non-strict) | B > C (strict)     | A > C (strict)                                 |
+| A ≥ B (non-strict) | B ≥ C (non-strict) | A ≥ C (non-strict)                             |
 | A ≥ B (non-strict) | B ≥ C (non-strict) | **NOT** A > C — this is a valid "False" answer |
 
 Key rule: **at least one strict edge anywhere in a chain propagates strictness**. A chain of all non-strict edges can only guarantee a non-strict conclusion.
@@ -49,6 +49,7 @@ direction: -2  →  A ≤ B  ("A is not larger than B")
 ```
 
 This is backward-compatible: existing code only compares against `1`, `-1`, `0`. The new directions `±2` need new handling in:
+
 - Prolog fact generation (`addFactToSession`)
 - Transitive closure in `QuestionVerifier`
 - Vocabulary
@@ -86,12 +87,14 @@ However, the current `QuestionVerifier.verifyLinearQuestion()` already uses **Ja
 **JS transitive closure update in `QuestionVerifier`:**
 
 Maintain two graphs: `strictlyLess` and `nonStrictlyLess`. Rules:
+
 - `direction 1` (A > B) → `strictlyLess[B].add(A)` ← B is strictly less than A
 - `direction -1` (A < B) → `strictlyLess[A].add(B)`
 - `direction 2` (A ≥ B) → `nonStrictlyLess[B].add(A)` only
 - `direction -2` (A ≤ B) → `nonStrictlyLess[A].add(B)` only
 
 Closure propagation:
+
 - strict + strict → strict
 - strict + non-strict → strict
 - non-strict + strict → strict
@@ -127,7 +130,7 @@ The Linear branch currently picks `useForwardPhrasing` to decide `direction: 1` 
 
 ```javascript
 // Instead of binary strict choice:
-const directionPool = [1, -1, 2, -2];  // strict and non-strict
+const directionPool = [1, -1, 2, -2]; // strict and non-strict
 const direction = random.pickRandom(directionPool);
 ```
 
@@ -151,6 +154,7 @@ The inferred relation's `direction` is set accordingly (positive = forward order
 ### `generators/PathBasedQuestionGenerator.js` — `createInvalidConclusion()`
 
 For Linear negations, "invalid" can mean:
+
 - Strict conclusion from all non-strict chain (e.g. present direction `1` when the chain only guarantees `2`)
 - Wrong direction entirely (existing behavior — swap entities)
 
@@ -170,34 +174,35 @@ Non-strict premises should only appear at higher difficulty levels. In `main.js`
 
 ## Files to Touch
 
-| File | Change |
-|------|--------|
-| `render/Vocabulary.js` | Add `nonstrict_forward` / `nonstrict_backward` for all dimensions |
-| `core/Path.js` | Extend direction selection, update `getInferredRelation()` |
-| `generators/PathBasedQuestionGenerator.js` | Update `createInvalidConclusion()` with strictness-flip option |
-| `verification/QuestionVerifier.js` | Update JS transitive closure to track strict vs non-strict |
-| `relations/LinearRelationType.js` | Update `addFactToSession()` for `direction: ±2`; update `validate()` |
-| `main.js` | Gate `allowNonStrict` behind difficulty level |
+| File                                       | Change                                                               |
+| ------------------------------------------ | -------------------------------------------------------------------- |
+| `render/Vocabulary.js`                     | Add `nonstrict_forward` / `nonstrict_backward` for all dimensions    |
+| `core/Path.js`                             | Extend direction selection, update `getInferredRelation()`           |
+| `generators/PathBasedQuestionGenerator.js` | Update `createInvalidConclusion()` with strictness-flip option       |
+| `verification/QuestionVerifier.js`         | Update JS transitive closure to track strict vs non-strict           |
+| `relations/LinearRelationType.js`          | Update `addFactToSession()` for `direction: ±2`; update `validate()` |
+| `main.js`                                  | Gate `allowNonStrict` behind difficulty level                        |
 
 ---
 
 ## Edge Cases
 
-| Scenario | Decision |
-|----------|----------|
-| Non-strict + Indeterminate (Idea #1) | Compatible — an indeterminate question can use non-strict premises. The indeterminate-ness comes from graph shape (hub/fork), not strictness. |
-| direction: 0 (equal) | Equal implies both ≥ and ≤, so it implies `larger_or_equal` in both directions. Treat equal as implying non-strict in both directions. |
-| Conclusion is non-strict but player expects strict | Intentionally ambiguous — this is the difficulty. Vocabulary must be unambiguous: "is not larger than" must clearly mean ≤, not <. |
-| Spatial / Syllogistic | Not applicable. Non-strict only targets Linear relations. |
-| Very long chains (5 entities) | Strictness propagation handles long chains correctly via the closure rules above. |
+| Scenario                                           | Decision                                                                                                                                      |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Non-strict + Indeterminate (Idea #1)               | Compatible — an indeterminate question can use non-strict premises. The indeterminate-ness comes from graph shape (hub/fork), not strictness. |
+| direction: 0 (equal)                               | Equal implies both ≥ and ≤, so it implies `larger_or_equal` in both directions. Treat equal as implying non-strict in both directions.        |
+| Conclusion is non-strict but player expects strict | Intentionally ambiguous — this is the difficulty. Vocabulary must be unambiguous: "is not larger than" must clearly mean ≤, not <.            |
+| Spatial / Syllogistic                              | Not applicable. Non-strict only targets Linear relations.                                                                                     |
+| Very long chains (5 entities)                      | Strictness propagation handles long chains correctly via the closure rules above.                                                             |
 
 ---
 
 ## Example
 
 **Premises:**
-- FOBIX is not larger than GAKUN  (FOBIX ≤ GAKUN)
-- GAKUN is not larger than JEPOL  (GAKUN ≤ JEPOL)
+
+- FOBIX is not larger than GAKUN (FOBIX ≤ GAKUN)
+- GAKUN is not larger than JEPOL (GAKUN ≤ JEPOL)
 
 **Conclusion:** Is FOBIX smaller than JEPOL? (FOBIX < JEPOL)
 
@@ -206,8 +211,9 @@ Non-strict premises should only appear at higher difficulty levels. In `main.js`
 ---
 
 **Premises:**
-- FOBIX is not larger than GAKUN  (FOBIX ≤ GAKUN)
-- GAKUN is larger than JEPOL      (GAKUN > JEPOL)
+
+- FOBIX is not larger than GAKUN (FOBIX ≤ GAKUN)
+- GAKUN is larger than JEPOL (GAKUN > JEPOL)
 
 **Conclusion:** Is FOBIX larger than JEPOL?
 

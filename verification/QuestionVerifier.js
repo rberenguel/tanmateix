@@ -227,6 +227,8 @@ export class QuestionVerifier {
         return await this.verifyCategoricalQuestion(question);
       case "Spatial":
         return await this.verifySpatialQuestion(question, spatialGrid);
+      case "Syllogistic":
+        return await this.verifySyllogisticQuestion(question);
       default:
         return {
           valid: false,
@@ -498,6 +500,125 @@ export class QuestionVerifier {
       return {
         valid: false,
         error: `Categorical verification error: ${error.message}`,
+      };
+    }
+  }
+
+  /**
+   * Verify a syllogistic question using pure JavaScript.
+   *
+   * Inference rules:
+   *   A ⊂ B, B ⊂ C  →  A ⊂ C   [Barbara / transitive closure]
+   *   A ⊂ B, B ∩ C = ∅  →  A ∩ C = ∅   [Celarent]
+   *   disjoint is symmetric
+   */
+  async verifySyllogisticQuestion(question) {
+    try {
+      const entities = new Set();
+      for (const premise of question.premises) {
+        entities.add(premise.entities[0].id);
+        entities.add(premise.entities[1].id);
+      }
+      const entityList = Array.from(entities);
+
+      // Step 1: Build subset transitive closure
+      const subsetClosure = new Map();
+      for (const e of entityList) subsetClosure.set(e, new Set());
+
+      for (const premise of question.premises) {
+        if (premise.properties.relationType === "subset") {
+          const e1 = premise.entities[0].id;
+          const e2 = premise.entities[1].id;
+          subsetClosure.get(e1)?.add(e2);
+        }
+      }
+
+      // Iteratively expand: A⊂B, B⊂C → A⊂C
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (const a of entityList) {
+          for (const b of [...subsetClosure.get(a)]) {
+            for (const c of [...(subsetClosure.get(b) || [])]) {
+              if (c !== a && !subsetClosure.get(a).has(c)) {
+                subsetClosure.get(a).add(c);
+                changed = true;
+              }
+            }
+          }
+        }
+      }
+
+      const isSubset = (a, b) => subsetClosure.get(a)?.has(b) ?? false;
+
+      // Step 2: Build disjoint closure (symmetric)
+      const disjointSet = new Set();
+      const addDisjoint = (a, b) => {
+        disjointSet.add(`${a}:${b}`);
+        disjointSet.add(`${b}:${a}`);
+      };
+      const isDisjoint = (a, b) => disjointSet.has(`${a}:${b}`);
+
+      for (const premise of question.premises) {
+        if (premise.properties.relationType === "disjoint") {
+          const e1 = premise.entities[0].id;
+          const e2 = premise.entities[1].id;
+          addDisjoint(e1, e2);
+        }
+      }
+
+      // Iteratively expand: A⊂B and B∩C=∅ → A∩C=∅
+      changed = true;
+      while (changed) {
+        changed = false;
+        const currentPairs = [...disjointSet].map((p) => p.split(":"));
+        for (const [b, c] of currentPairs) {
+          for (const a of entityList) {
+            if (isSubset(a, b) && !isDisjoint(a, c)) {
+              addDisjoint(a, c);
+              changed = true;
+            }
+          }
+        }
+      }
+
+      // Step 3: Check conclusion
+      const c1 = question.conclusion.entities[0].id;
+      const c2 = question.conclusion.entities[1].id;
+      const conclusionType = question.conclusion.properties.relationType;
+
+      let conclusionHolds;
+      if (conclusionType === "subset") {
+        conclusionHolds = isSubset(c1, c2);
+      } else if (conclusionType === "disjoint") {
+        conclusionHolds = isDisjoint(c1, c2);
+      } else {
+        return {
+          valid: false,
+          error: `Unknown syllogistic conclusion type: ${conclusionType}`,
+        };
+      }
+
+      if (conclusionHolds === question.isValid) {
+        return { valid: true };
+      } else {
+        return {
+          valid: false,
+          error:
+            "Syllogistic verification failed: Question validity doesn't match logical derivation",
+          details: {
+            c1,
+            c2,
+            conclusionType,
+            conclusionHolds,
+            claimedValid: question.isValid,
+          },
+        };
+      }
+    } catch (error) {
+      return {
+        valid: false,
+        error: `Syllogistic verification error: ${error.message}`,
       };
     }
   }

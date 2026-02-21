@@ -7,7 +7,7 @@
 
 ## Background & Motivation
 
-The current `CategoricalRelationType` uses a binary `same/different` property. It was disabled in `PathBasedQuestionGenerator.js` with the comment *"Categorical disabled - not interesting enough"*. The problem is cognitive load: "same" and "different" have no logical structure beyond direct equivalence, so the player can guess by counting parity.
+The current `CategoricalRelationType` uses a binary `same/different` property. It was disabled in `PathBasedQuestionGenerator.js` with the comment _"Categorical disabled - not interesting enough"_. The problem is cognitive load: "same" and "different" have no logical structure beyond direct equivalence, so the player can guess by counting parity.
 
 Syllogistic (Set Theory) relations elevate this dramatically:
 
@@ -16,11 +16,11 @@ Syllogistic (Set Theory) relations elevate this dramatically:
 
 These combine transitively via two valid inference rules (analogous to Aristotle's Barbara and Celarent syllogisms):
 
-| Edge 1 | Edge 2 | Conclusion |
-|--------|--------|------------|
-| A ⊂ B  | B ⊂ C  | A ⊂ C ✓   |
-| A ⊂ B  | B ∩ C = ∅ | A ∩ C = ∅ ✓ |
-| A ∩ B = ∅ | B ⊂ C | **Unknown** ✗ |
+| Edge 1    | Edge 2    | Conclusion    |
+| --------- | --------- | ------------- |
+| A ⊂ B     | B ⊂ C     | A ⊂ C ✓       |
+| A ⊂ B     | B ∩ C = ∅ | A ∩ C = ∅ ✓   |
+| A ∩ B = ∅ | B ⊂ C     | **Unknown** ✗ |
 | A ∩ B = ∅ | B ∩ C = ∅ | **Unknown** ✗ |
 
 The player must mentally construct Venn diagrams to evaluate the conclusion.
@@ -45,6 +45,7 @@ disjoint(A,B) ∧ *           →  unknown          [no valid inference]
 ```
 
 For paths longer than 3 entities (`entitiesPerPath > 3`), the safe rule is:
+
 - All intermediate edges must be **subset**.
 - The last edge may be **subset** or **disjoint**.
 - This ensures transitivity holds all the way to the endpoints.
@@ -56,6 +57,7 @@ For paths longer than 3 entities (`entitiesPerPath > 3`), the safe rule is:
 The existing renderer outputs `[entityA] [relation] [entityB]`. Syllogistic language can fit this pattern naturally:
 
 ### Subset vocabularies (A is subset of B)
+
 ```
 "are all"              → "FOBIX are all GAKUN"
 "are a type of"        → "FOBIX are a type of GAKUN"
@@ -65,6 +67,7 @@ The existing renderer outputs `[entityA] [relation] [entityB]`. Syllogistic lang
 ```
 
 ### Disjoint vocabularies (A and B never overlap)
+
 ```
 "are never"            → "FOBIX are never GAKUN"
 "cannot be"            → "FOBIX cannot be GAKUN"
@@ -122,6 +125,7 @@ Update `getCategoricalText` name (or add parallel `getSyllogisticText`).
 Add `isSyllogistic = this.relationType.name === "Syllogistic"` branch.
 
 For a path `[A, B, C, ..., N]`:
+
 - All edges from `0` to `N-2` must be `subset`.
 - Last edge (`N-2` to `N-1`) can be `subset` OR `disjoint` (chosen randomly at `pathProperties.lastEdgeDisjoint`).
 - Each edge picks one vocabulary string from the appropriate bucket.
@@ -131,26 +135,30 @@ For `entitiesPerPath === 3` specifically, either edge can be `subset`, but only 
 **`getInferredRelation()`:**
 
 Add syllogistic branch:
+
 ```
 if all edges are subset: conclusion is subset(first, last)
 if last edge is disjoint: conclusion is disjoint(first, last)
 ```
+
 Use the vocabulary stored in `this.pathProperties` (the `lastEdgeDisjoint` flag). Return the relation using `this.vocabulary`.
 
 ### 4. `generators/PathBasedQuestionGenerator.js` ← **re-enable + new branch**
 
 **`availableRelationTypes`:**
+
 ```javascript
 const availableRelationTypes = [
   new LinearRelationType(),
   new SpatialRelationType(2),
-  new SyllogisticRelationType(),  // ← add this
+  new SyllogisticRelationType(), // ← add this
 ];
 ```
 
 **`createPath()`:**
 
 Add `else if (relationType instanceof SyllogisticRelationType)` branch:
+
 - Pick one vocabulary word from `subset` and one from `disjoint` (stored as `vocabulary.subset` and `vocabulary.disjoint`).
 - Pick `lastEdgeDisjoint: boolean` (random coin flip) for `pathProperties`.
 - Pass to `Path` constructor.
@@ -158,6 +166,7 @@ Add `else if (relationType instanceof SyllogisticRelationType)` branch:
 **`createInvalidConclusion()`:**
 
 Add syllogistic branch:
+
 - Valid conclusion is `subset` → invalid conclusion is `disjoint`, and vice versa.
 - Swap the `relationType` property; keep same entities (order A,C).
 - Pick vocabulary from the other bucket.
@@ -185,9 +194,11 @@ Add `export { SyllogisticRelationType } from './SyllogisticRelationType.js';`
 Add `"Syllogistic"` to the timing branch alongside Linear/Spatial. Syllogistic reasoning (Venn diagram construction) is cognitively closer to Spatial in effort — use the Spatial TPP values as a starting point.
 
 The current timing switch (from context):
+
 ```javascript
 // Linear: faster, Spatial: slower
 ```
+
 Add: `Syllogistic` → treat like Spatial (or introduce a third timing tier between them after playtesting).
 
 ### 8. `tests/test-basic.js` ← **add syllogistic tests**
@@ -211,24 +222,26 @@ Add Test N: Create a `SyllogisticRelationType`, create `subset` and `disjoint` r
 
 ## Edge Cases & Decisions
 
-| Scenario | Decision |
-|----------|----------|
-| `entitiesPerPath === 2` | Only 1 premise, no transitive inference possible. Skip syllogistic for 2-entity paths (require ≥ 3). |
-| Path length > 3 | Only the final edge may be disjoint; all prior edges are subset. |
-| Multi-path questions (numPaths > 1) | Syllogistic can coexist with Linear or Spatial in the same question (already handled by the mixed-type verification path). |
-| Disjoint as first edge | Never generated for valid inferences; can appear in "false" answers (createInvalidConclusion swaps subset↔disjoint). |
-| `inverse(relation)` for subset | Not used in game flow (Path generates directed edges). Throw `Error("subset has no inverse")` to catch any unexpected usage. |
-| Conclusion vocabulary | Pick one word from `subset` or `disjoint` pool; store as `vocabulary.conclusionSubset` / `vocabulary.conclusionDisjoint` in `pathProperties` so conclusion text is consistent with premise vocabulary style. |
+| Scenario                            | Decision                                                                                                                                                                                                     |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `entitiesPerPath === 2`             | Only 1 premise, no transitive inference possible. Skip syllogistic for 2-entity paths (require ≥ 3).                                                                                                         |
+| Path length > 3                     | Only the final edge may be disjoint; all prior edges are subset.                                                                                                                                             |
+| Multi-path questions (numPaths > 1) | Syllogistic can coexist with Linear or Spatial in the same question (already handled by the mixed-type verification path).                                                                                   |
+| Disjoint as first edge              | Never generated for valid inferences; can appear in "false" answers (createInvalidConclusion swaps subset↔disjoint).                                                                                        |
+| `inverse(relation)` for subset      | Not used in game flow (Path generates directed edges). Throw `Error("subset has no inverse")` to catch any unexpected usage.                                                                                 |
+| Conclusion vocabulary               | Pick one word from `subset` or `disjoint` pool; store as `vocabulary.conclusionSubset` / `vocabulary.conclusionDisjoint` in `pathProperties` so conclusion text is consistent with premise vocabulary style. |
 
 ---
 
 ## Example Generated Question
 
 **Premises (shuffled):**
+
 - FOBIX are a type of GAKUN
 - GAKUN are never JEPOL
 
 **Conclusion:**
+
 - FOBIX are never JEPOL?
 
 **Answer:** True ✓ (via: FOBIX⊂GAKUN, GAKUN∩JEPOL=∅ → FOBIX∩JEPOL=∅)

@@ -5,10 +5,10 @@ import { Renderer } from "./render/Renderer.js";
 
 // Timing milestones for linear interpolation
 const TIERS = [
-  { level: 1, linear: 4.0, spatial: 6.0, buffer: 4.0 },
-  { level: 4, linear: 3.0, spatial: 4.5, buffer: 3.0 },
-  { level: 7, linear: 2.0, spatial: 3.0, buffer: 2.5 },
-  { level: 10, linear: 1.5, spatial: 2.25, buffer: 2.0 },
+  { level: 1, linear: 4.0, spatial: 6.0, syllogistic: 6.0, buffer: 4.0 },
+  { level: 4, linear: 3.0, spatial: 4.5, syllogistic: 4.5, buffer: 3.0 },
+  { level: 7, linear: 2.0, spatial: 3.0, syllogistic: 3.0, buffer: 2.5 },
+  { level: 10, linear: 1.5, spatial: 2.25, syllogistic: 2.25, buffer: 2.0 },
 ];
 
 function getTimingConfig(currentLevel) {
@@ -33,6 +33,7 @@ function getTimingConfig(currentLevel) {
   return {
     linear: lerp(lowerTier.linear, upperTier.linear, progress),
     spatial: lerp(lowerTier.spatial, upperTier.spatial, progress),
+    syllogistic: lerp(lowerTier.syllogistic, upperTier.syllogistic, progress),
     buffer: lerp(lowerTier.buffer, upperTier.buffer, progress),
   };
 }
@@ -117,9 +118,14 @@ function calculateTimeLimit(question, level) {
   const relationType =
     question.premises[0]?.type?.constructor?.name || "LinearRelationType";
   const isSpatial = relationType === "SpatialRelationType";
+  const isSyllogistic = relationType === "SyllogisticRelationType";
 
   // Get base TPP for relation type
-  const tpp = isSpatial ? config.spatial : config.linear;
+  const tpp = isSpatial
+    ? config.spatial
+    : isSyllogistic
+      ? config.syllogistic
+      : config.linear;
 
   // Apply scroll discount for premises > 10
   // Premises 1-10: Full TPP
@@ -146,6 +152,8 @@ window.tanmateix = {
 
   // Generate a new question with current settings
   newQuestion: async () => {
+    document.getElementById("start-screen").classList.remove("visible");
+
     const question = await generator.generateMultiPathQuestion(
       window.tanmateix.numPaths,
       window.tanmateix.entitiesPerPath,
@@ -190,8 +198,33 @@ window.tanmateix = {
     return window.tanmateix.newQuestion();
   },
 
+  // Force a syllogistic question (subset/disjoint reasoning)
+  testSyllogistic: async (entities = 3) => {
+    document.getElementById("start-screen").classList.remove("visible");
+
+    const question = await generator.generateMultiPathQuestion(1, entities, {
+      forceRelationType: "Syllogistic",
+    });
+    gameState.currentQuestion = question;
+    gameState.answered = false;
+
+    const container = document.getElementById("game-container");
+    container.innerHTML = renderer.renderGameUI(question);
+
+    container.querySelectorAll(".btn").forEach((btn) => {
+      btn.addEventListener("click", handleAnswer);
+    });
+
+    const debugInfo = document.getElementById("debug-info");
+    debugInfo.innerHTML = renderer.renderNetworkInfo(question);
+
+    return question;
+  },
+
   // Test spatial graph (fully-connected configuration)
   testSpatialGraph: async (entities = 3) => {
+    document.getElementById("start-screen").classList.remove("visible");
+
     const question = await generator.generateSpatialGraphQuestion(entities);
     gameState.currentQuestion = question;
     gameState.answered = false;
@@ -263,7 +296,11 @@ async function newQuestion() {
   const scrollDiscount = numPremises > 10 ? " 📜" : "";
   const config = getTimingConfig(level);
   const tppUsed =
-    relationType === "SpatialRelationType" ? config.spatial : config.linear;
+    relationType === "SpatialRelationType"
+      ? config.spatial
+      : relationType === "SyllogisticRelationType"
+        ? config.syllogistic
+        : config.linear;
   console.log(
     `⏱️  Time: ${timeLimit}s (L${level}, ${numPremises}p × ${tppUsed.toFixed(2)}s + ${config.buffer.toFixed(1)}s${scrollDiscount})`,
   );

@@ -42,6 +42,7 @@ export class Path {
     const relations = [];
     const isSpatial = this.relationType.name === "Spatial";
     const isCategorical = this.relationType.name === "Categorical";
+    const isSyllogistic = this.relationType.name === "Syllogistic";
 
     // For linear: force variety in 2-premise questions
     // First edge gets random phrasing, second gets opposite
@@ -85,6 +86,25 @@ export class Path {
           vector,
         );
         relations.push(relation);
+      } else if (isSyllogistic) {
+        // Syllogistic: all edges are subset, except optionally the last edge
+        // which can be disjoint (controlled by pathProperties.lastEdgeDisjoint).
+        const isLastEdge = i === totalEdges - 1;
+        const useDisjoint = isLastEdge && this.pathProperties.lastEdgeDisjoint;
+        const edgeRelationType = useDisjoint ? "disjoint" : "subset";
+        const text = useDisjoint
+          ? this.vocabulary.disjoint
+          : this.vocabulary.subset;
+
+        const properties = {
+          ...this.pathProperties,
+          relationType: edgeRelationType,
+          direction: 1,
+          text,
+        };
+        relations.push(
+          this.relationType.createRelation([entityA, entityB], properties),
+        );
       } else if (isCategorical) {
         // Categorical (unbounded universe):
         // Can only make valid inferences with at most 1 "different" edge
@@ -192,8 +212,28 @@ export class Path {
 
     const isSpatial = this.relationType.name === "Spatial";
     const isCategorical = this.relationType.name === "Categorical";
+    const isSyllogistic = this.relationType.name === "Syllogistic";
 
-    if (isSpatial) {
+    if (isSyllogistic) {
+      // All-subset path → subset conclusion (Barbara)
+      // Subset + disjoint path → disjoint conclusion (Celarent)
+      const useDisjoint = this.pathProperties.lastEdgeDisjoint;
+      const conclusionRelationType = useDisjoint ? "disjoint" : "subset";
+      const text = useDisjoint
+        ? this.vocabulary.conclusionDisjoint
+        : this.vocabulary.conclusionSubset;
+
+      const properties = {
+        ...this.pathProperties,
+        relationType: conclusionRelationType,
+        direction: 1,
+        text,
+      };
+      return this.relationType.createRelation(
+        [this.entities[0], this.entities[this.entities.length - 1]],
+        properties,
+      );
+    } else if (isSpatial) {
       // Spatial: Sum all edge vectors to get inferred vector
       const edgeVectors = this.pathProperties.edgeVectors;
       const sumVector = edgeVectors.reduce(

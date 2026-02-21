@@ -31,11 +31,14 @@ The game features various types of logical relationships including:
   - Quantity: quantity
   - Metrics: latency, throughput, availability, error_rate, reliability
 - **Spatial relationships** (directional positioning: north, south, east, west, etc.)
-- **Categorical relationships** (same/different categories)
+- **Syllogistic relationships** (Aristotelian set-theory reasoning):
+  - **Subset** — "FOBIX are a type of GAKUN" (A ⊂ B)
+  - **Disjoint** — "FOBIX are never GAKUN" (A ∩ B = ∅)
+  - Valid inferences: Barbara (A⊂B, B⊂C → A⊂C) and Celarent (A⊂B, B∩C=∅ → A∩C=∅)
 
 ### Advanced: Multi-Path Questions
 
-The game supports generating questions with multiple premise paths over the **same entities**. Each path uses a different relationship type (linear, spatial, or categorical), and you can configure both the number of paths and the length of each path.
+The game supports generating questions with multiple premise paths over the **same entities**. Each path uses a different relationship type (linear, spatial, or syllogistic), and you can configure both the number of paths and the length of each path.
 
 **Example 2-path question (default 3 entities):**
 
@@ -43,6 +46,11 @@ The game supports generating questions with multiple premise paths over the **sa
 - **Path 1 (Linear):** "A is larger than B", "B is larger than C"
 - **Path 2 (Spatial):** "A is north of B", "B is north of C"
 - **Conclusion:** "A is larger than C?" (from Path 1)
+
+**Example syllogistic question:**
+
+- **Premises:** "FOBIX are a type of GAKUN", "GAKUN are never JEPOL"
+- **Conclusion:** "FOBIX are never JEPOL?" → True ✓ (Celarent)
 
 **Example long-path question (5 entities):**
 
@@ -55,6 +63,9 @@ The game supports generating questions with multiple premise paths over the **sa
 ```javascript
 // Generate a 2-path question (4 premises over 3 entities)
 window.tanmateix.test2Path();
+
+// Generate a syllogistic question
+window.tanmateix.testSyllogistic();
 
 // Generate a long path (4 premises over 5 entities in one path)
 window.tanmateix.testLongPath(5);
@@ -89,13 +100,18 @@ A modular architecture for generating logic questions with composable premise ty
 
 ### Logical Inference
 
-Linear and Categorical relation types use **Tau Prolog** for:
+Linear relation types use **Tau Prolog** for:
 
 - Transitive inference (e.g., A>B, B>C ⇒ A>C)
 - Contradiction detection (e.g., rejecting A>B>C>A cycles)
 - Declarative logic rules instead of manual implementation
 
 Spatial relations use custom vector arithmetic for 2D/3D positioning.
+
+Syllogistic relations use pure JavaScript for:
+
+- Subset transitive closure (Barbara: A⊂B, B⊂C → A⊂C)
+- Disjoint expansion (Celarent: A⊂B, B∩C=∅ → A∩C=∅)
 
 ### Verification System
 
@@ -122,7 +138,8 @@ See [verification/README.md](verification/README.md) for technical details.
 ├── relations/
 │   ├── LinearRelationType.js       - Ordered comparisons
 │   ├── SpatialRelationType.js      - Directional relationships
-│   ├── CategoricalRelationType.js  - Same/different
+│   ├── CategoricalRelationType.js  - Same/different (disabled)
+│   ├── SyllogisticRelationType.js  - Subset/disjoint (Barbara & Celarent)
 │   └── index.js
 
 ├── utils/

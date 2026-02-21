@@ -225,6 +225,22 @@ export const CATEGORICAL_VOCABULARIES = {
   different: ["is different from", "is opposite of", "differs from"],
 };
 
+export const SYLLOGISTIC_VOCABULARIES = {
+  subset: [
+    "are all",
+    "are a type of",
+    "are always",
+    "belong to",
+    "fall within",
+  ],
+  disjoint: [
+    "are never",
+    "cannot be",
+    "are excluded from",
+    "are incompatible with",
+  ],
+};
+
 /**
  * Helper to pick random vocabulary
  */
@@ -325,6 +341,17 @@ export function getCategoricalText(relation, minimal = false) {
 }
 
 /**
+ * Get text for syllogistic relation
+ */
+export function getSyllogisticText(relation, minimal = false) {
+  if (relation.properties.text) return relation.properties.text;
+  const relType = relation.properties.relationType || "subset";
+  return pickRandom(
+    SYLLOGISTIC_VOCABULARIES[relType] || SYLLOGISTIC_VOCABULARIES.subset,
+  );
+}
+
+/**
  * Fallback: describe vector in natural language
  */
 function describeVector(vector) {
@@ -359,6 +386,8 @@ export function getRelationText(relation, minimal = false) {
     return getSpatialText(relation, minimal);
   } else if (relation.type.name === "Categorical") {
     return getCategoricalText(relation, minimal);
+  } else if (relation.type.name === "Syllogistic") {
+    return getSyllogisticText(relation, minimal);
   }
 
   return "relates to";

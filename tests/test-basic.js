@@ -8,6 +8,9 @@ import { PremiseNetwork } from "./core/PremiseNetwork.js";
 import { LinearRelationType } from "./relations/LinearRelationType.js";
 import { SpatialRelationType } from "./relations/SpatialRelationType.js";
 import { CategoricalRelationType } from "./relations/CategoricalRelationType.js";
+import { SyllogisticRelationType } from "./relations/SyllogisticRelationType.js";
+import { QuestionVerifier } from "./verification/QuestionVerifier.js";
+import { Question } from "./models/Question.js";
 
 console.log("=== Testing v2 Architecture ===\n");
 
@@ -130,5 +133,142 @@ console.log(
   json.relations.length,
   "relations",
 );
+
+// Test 10: Syllogistic relations - basic creation
+console.log("\nTest 10: Syllogistic relations - basic creation...");
+const sylType = new SyllogisticRelationType();
+const syl1 = sylType.createRelation([a, b], {
+  relationType: "subset",
+  direction: 1,
+  text: "are a type of",
+});
+const syl2 = sylType.createRelation([b, c], {
+  relationType: "disjoint",
+  direction: 1,
+  text: "are never",
+});
+console.log("✓ subset:", a.displayValue, "⊂", b.displayValue);
+console.log("✓ disjoint:", b.displayValue, "∩", c.displayValue, "= ∅");
+
+// Test 11: Syllogistic validate
+console.log("\nTest 11: Syllogistic validate...");
+console.log("✓ subset valid:", sylType.validate(syl1));
+console.log("✓ disjoint valid:", sylType.validate(syl2));
+const invalidSyl = sylType.createRelation([a, b], {
+  relationType: "neither",
+  direction: 1,
+});
+console.log("✓ invalid relationType caught:", !sylType.validate(invalidSyl));
+
+// Test 12: Syllogistic contradicts
+console.log("\nTest 12: Syllogistic contradicts...");
+const sylAB_subset = sylType.createRelation([a, b], {
+  relationType: "subset",
+  direction: 1,
+});
+const sylAB_disjoint = sylType.createRelation([a, b], {
+  relationType: "disjoint",
+  direction: 1,
+});
+const sylAB_subset2 = sylType.createRelation([a, b], {
+  relationType: "subset",
+  direction: 1,
+});
+console.log(
+  "✓ subset+disjoint contradict:",
+  sylType.contradicts(sylAB_subset, sylAB_disjoint),
+);
+console.log(
+  "✓ subset+subset no contradiction:",
+  !sylType.contradicts(sylAB_subset, sylAB_subset2),
+);
+
+// Test 13: Syllogistic verification - Barbara (subset+subset → subset)
+console.log(
+  "\nTest 13: Syllogistic verification - Barbara (A⊂B, B⊂C → A⊂C)...",
+);
+const verifier = new QuestionVerifier();
+// A⊂B, B⊂C → A⊂C
+const premisesA = [
+  sylType.createRelation([a, b], {
+    relationType: "subset",
+    direction: 1,
+    text: "are a type of",
+  }),
+  sylType.createRelation([b, c], {
+    relationType: "subset",
+    direction: 1,
+    text: "belong to",
+  }),
+];
+const netA = new PremiseNetwork();
+[a, b, c].forEach((e) => netA.addEntity(e));
+premisesA.forEach((r) => netA.addRelation(r));
+
+const conclusionSubset = sylType.createRelation([a, c], {
+  relationType: "subset",
+  direction: 1,
+  text: "fall within",
+});
+const qBarbara = new Question({
+  network: netA,
+  premises: premisesA,
+  conclusion: conclusionSubset,
+  isValid: true,
+});
+
+const vBarbara = await verifier.verifySyllogisticQuestion(qBarbara);
+console.log("✓ Barbara (valid=true) verified:", vBarbara.valid);
+
+// Test 14: Syllogistic verification - Celarent (A⊂B, B∩C=∅ → A∩C=∅)
+console.log(
+  "\nTest 14: Syllogistic verification - Celarent (A⊂B, B∩C=∅ → A∩C=∅)...",
+);
+const premisesB = [
+  sylType.createRelation([a, b], {
+    relationType: "subset",
+    direction: 1,
+    text: "are a type of",
+  }),
+  sylType.createRelation([b, c], {
+    relationType: "disjoint",
+    direction: 1,
+    text: "are never",
+  }),
+];
+const netB = new PremiseNetwork();
+[a, b, c].forEach((e) => netB.addEntity(e));
+premisesB.forEach((r) => netB.addRelation(r));
+
+const conclusionDisjoint = sylType.createRelation([a, c], {
+  relationType: "disjoint",
+  direction: 1,
+  text: "are excluded from",
+});
+const qCelarent = new Question({
+  network: netB,
+  premises: premisesB,
+  conclusion: conclusionDisjoint,
+  isValid: true,
+});
+
+const vCelarent = await verifier.verifySyllogisticQuestion(qCelarent);
+console.log("✓ Celarent (valid=true) verified:", vCelarent.valid);
+
+// Test 15: Syllogistic verification - invalid conclusion
+console.log("\nTest 15: Syllogistic - wrong conclusion correctly rejected...");
+const conclusionWrong = sylType.createRelation([a, c], {
+  relationType: "subset", // Wrong: should be disjoint per Celarent
+  direction: 1,
+  text: "are a type of",
+});
+const qWrong = new Question({
+  network: netB,
+  premises: premisesB,
+  conclusion: conclusionWrong,
+  isValid: false, // Correctly claimed as invalid
+});
+const vWrong = await verifier.verifySyllogisticQuestion(qWrong);
+console.log("✓ Wrong conclusion (isValid=false) verified:", vWrong.valid);
 
 console.log("\n=== All basic tests passed! ===");

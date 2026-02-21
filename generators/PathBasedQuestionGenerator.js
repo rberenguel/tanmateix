@@ -3,11 +3,13 @@ import { Question } from "../models/Question.js";
 import { LinearRelationType } from "../relations/LinearRelationType.js";
 import { SpatialRelationType } from "../relations/SpatialRelationType.js";
 import { CategoricalRelationType } from "../relations/CategoricalRelationType.js";
+import { SyllogisticRelationType } from "../relations/SyllogisticRelationType.js";
 import { PremiseNetwork } from "../core/PremiseNetwork.js";
 import {
   LINEAR_VOCABULARIES,
   SPATIAL_VOCABULARIES,
   CATEGORICAL_VOCABULARIES,
+  SYLLOGISTIC_VOCABULARIES,
 } from "../render/Vocabulary.js";
 import { SpatialGrid } from "../utils/SpatialGrid.js";
 import { QuestionVerifier } from "../verification/QuestionVerifier.js";
@@ -35,7 +37,13 @@ export class PathBasedQuestionGenerator {
    * @param {number} entitiesPerPath - Number of entities per path (default: 3)
    * Each path creates (entitiesPerPath - 1) premises over the SAME entities
    */
-  async generateMultiPathQuestion(numPaths = 1, entitiesPerPath = 3) {
+  async generateMultiPathQuestion(
+    numPaths = 1,
+    entitiesPerPath = 3,
+    options = {},
+  ) {
+    const { forceRelationType } = options;
+
     // All paths share the same entity graph
     const entities = this.entityFactory.createEntities(entitiesPerPath);
 
@@ -45,13 +53,22 @@ export class PathBasedQuestionGenerator {
     const network = new PremiseNetwork();
     entities.forEach((e) => network.addEntity(e));
 
-    // Available relation types
-    const availableRelationTypes = [
-      new LinearRelationType(),
-      new SpatialRelationType(2),
-      // Categorical disabled - not interesting enough
-      // new CategoricalRelationType(),
-    ];
+    // Available relation types (optionally forced to a single type)
+    let availableRelationTypes;
+    if (forceRelationType === "Syllogistic" && entitiesPerPath >= 3) {
+      availableRelationTypes = [new SyllogisticRelationType()];
+    } else if (forceRelationType === "Linear") {
+      availableRelationTypes = [new LinearRelationType()];
+    } else if (forceRelationType === "Spatial") {
+      availableRelationTypes = [new SpatialRelationType(2)];
+    } else {
+      availableRelationTypes = [
+        new LinearRelationType(),
+        new SpatialRelationType(2),
+        // Syllogistic requires at least 3 entities (2 premises) to produce transitive conclusions
+        ...(entitiesPerPath >= 3 ? [new SyllogisticRelationType()] : []),
+      ];
+    }
 
     // Track used relation types to avoid duplicates
     const usedTypes = new Set();
@@ -78,6 +95,8 @@ export class PathBasedQuestionGenerator {
               return new SpatialRelationType(2);
             if (rt instanceof CategoricalRelationType)
               return new CategoricalRelationType();
+            if (rt instanceof SyllogisticRelationType)
+              return new SyllogisticRelationType();
           }),
         );
       }
@@ -312,6 +331,21 @@ export class PathBasedQuestionGenerator {
       pathProperties = {
         same,
       };
+    } else if (relationType instanceof SyllogisticRelationType) {
+      vocabulary = {
+        subset: this.random.pickRandom(SYLLOGISTIC_VOCABULARIES.subset),
+        disjoint: this.random.pickRandom(SYLLOGISTIC_VOCABULARIES.disjoint),
+        conclusionSubset: this.random.pickRandom(
+          SYLLOGISTIC_VOCABULARIES.subset,
+        ),
+        conclusionDisjoint: this.random.pickRandom(
+          SYLLOGISTIC_VOCABULARIES.disjoint,
+        ),
+      };
+
+      pathProperties = {
+        lastEdgeDisjoint: this.random.coinFlip(),
+      };
     }
 
     return new Path({
@@ -485,8 +519,28 @@ export class PathBasedQuestionGenerator {
   createInvalidConclusion(path, validConclusion) {
     const isCategorical = path.relationType.name === "Categorical";
     const isSpatial = path.relationType.name === "Spatial";
+    const isSyllogistic = path.relationType.name === "Syllogistic";
 
-    if (isCategorical) {
+    if (isSyllogistic) {
+      // Flip subset ↔ disjoint; keep same entity pair (A, C)
+      const validRelType = validConclusion.properties.relationType;
+      const newRelType = validRelType === "subset" ? "disjoint" : "subset";
+      const newText =
+        newRelType === "subset"
+          ? path.vocabulary.conclusionSubset
+          : path.vocabulary.conclusionDisjoint;
+
+      const properties = {
+        ...validConclusion.properties,
+        relationType: newRelType,
+        direction: 1,
+        text: newText,
+      };
+      return path.relationType.createRelation(
+        [validConclusion.entities[0], validConclusion.entities[1]],
+        properties,
+      );
+    } else if (isCategorical) {
       // Categorical: Flip the relation (same ↔ different)
       // Can't just swap entities because "same" is symmetric
       const newDirection = -validConclusion.properties.direction;

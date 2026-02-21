@@ -16,6 +16,7 @@ C > B
 ```
 
 This requires both:
+
 1. A new **question generation path** that produces underdetermined premise graphs.
 2. A new **UI button** and **scoring branch** for the third answer.
 
@@ -27,11 +28,11 @@ Current generation builds a **chain**: `A > B > C` — always fully deterministi
 
 For indeterminate, we need a **fork** or **merge** shape:
 
-| Shape  | Premises       | Conclusion query | Status         |
-|--------|---------------|------------------|----------------|
-| Merge  | X > A, X > B  | A vs B?          | Indeterminate  |
-| Fork   | A > X, B > X  | A vs B?          | Indeterminate  |
-| Branch | A > B, A > C  | B vs C?          | Indeterminate  |
+| Shape  | Premises     | Conclusion query | Status        |
+| ------ | ------------ | ---------------- | ------------- |
+| Merge  | X > A, X > B | A vs B?          | Indeterminate |
+| Fork   | A > X, B > X | A vs B?          | Indeterminate |
+| Branch | A > B, A > C | B vs C?          | Indeterminate |
 
 These are valid premise sets (no contradiction) but the conclusion endpoint pair has no inferrable ordering.
 
@@ -40,6 +41,7 @@ These are valid premise sets (no contradiction) but the conclusion endpoint pair
 ## Question Generation
 
 ### Frequency
+
 Indeterminate questions should appear at a configurable rate (e.g. 25% of questions). A simple approach: after the existing `coinFlip()` for valid/invalid, a second check decides if this is instead an indeterminate question.
 
 ### Generation algorithm for Linear indeterminate
@@ -77,20 +79,25 @@ Alternatively: add a separate `question.isIndeterminate: boolean` flag alongside
 ## Files to Touch
 
 ### 1. `models/Question.js`
+
 Add `isIndeterminate: boolean` field (default `false`). Constructor reads `config.isIndeterminate`.
 
 ### 2. `generators/PathBasedQuestionGenerator.js`
+
 - Add `generateIndeterminateQuestion(numEntities)` method that builds a hub-shaped premise graph.
 - In `generateMultiPathQuestion()`: after the existing valid/invalid coin flip, add a ~25% chance to call `generateIndeterminateQuestion()` instead (weighted probability, tunable).
 - The generated conclusion between the two "leaf" entities is a random (unverifiable) directional claim.
 
 ### 3. `verification/QuestionVerifier.js`
+
 - In `verifyLinearQuestion()`: after transitive closure, check if conclusion pair has no path in either direction. If so, return `{ valid: true, indeterminate: true }`.
 - `verifyQuestion()` passes `indeterminate` flag up to caller.
 - `PathBasedQuestionGenerator` uses this to confirm indeterminate questions are correctly labelled.
 
 ### 4. `render/Renderer.js` — `renderGameUI()`
+
 Add a third button:
+
 ```html
 <button class="btn btn-indeterminate" data-answer="indeterminate">
   <span class="btn-icon">?</span>
@@ -99,6 +106,7 @@ Add a third button:
 ```
 
 ### 5. `main.js`
+
 - `handleAnswer()`: handle `answer === 'indeterminate'` — correct if `question.isIndeterminate`, incorrect otherwise.
 - `handleTimeout()`: no change needed (timeout already counts as wrong).
 - Timing: indeterminate questions get slightly more time (hub-shaped graphs are cognitively harder to scan quickly). Add ~20% time bonus in `calculateTimeLimit()`.
@@ -107,19 +115,20 @@ Add a third button:
 
 ## Edge Cases
 
-| Scenario | Decision |
-|----------|----------|
-| Player answers True/False on an indeterminate question | Incorrect |
-| Player answers "Cannot be determined" on a True/False question | Incorrect |
-| Spatial indeterminate (e.g. A is north of B and C is north of B → A vs C?) | Out of scope for initial implementation. |
-| Syllogistic indeterminate (disjoint+disjoint → unknown) | Already handled by Syllogistic generation avoiding that pattern; can be extended later. |
-| Multi-path (mixed type) questions | Indeterminate only applies to the path type used for the conclusion. Restrict indeterminate questions to single-path mode initially. |
+| Scenario                                                                   | Decision                                                                                                                             |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Player answers True/False on an indeterminate question                     | Incorrect                                                                                                                            |
+| Player answers "Cannot be determined" on a True/False question             | Incorrect                                                                                                                            |
+| Spatial indeterminate (e.g. A is north of B and C is north of B → A vs C?) | Out of scope for initial implementation.                                                                                             |
+| Syllogistic indeterminate (disjoint+disjoint → unknown)                    | Already handled by Syllogistic generation avoiding that pattern; can be extended later.                                              |
+| Multi-path (mixed type) questions                                          | Indeterminate only applies to the path type used for the conclusion. Restrict indeterminate questions to single-path mode initially. |
 
 ---
 
 ## Example
 
 **Premises:**
+
 - FOBIX is larger than GAKUN
 - JEPOL is larger than GAKUN
 
