@@ -117,8 +117,26 @@ export class PathBasedQuestionGenerator {
       allPremises.push(...path.getPremises());
     }
 
+    // Inject distractor premises (noise filtering challenge)
+    const numDistractors = options.numDistractors ?? 0;
+    const distractorMeta = { distractorCount: 0, distractorEntityIds: [] };
+    let augmentedPremises = allPremises;
+    if (numDistractors > 0) {
+      const conclusionPathForDistractor = this.random.pickRandom(paths);
+      const distractorResult = this.injectDistractors(
+        entities,
+        conclusionPathForDistractor,
+        numDistractors,
+      );
+      augmentedPremises = [...allPremises, ...distractorResult.relations];
+      distractorMeta.distractorCount = distractorResult.relations.length;
+      distractorMeta.distractorEntityIds = distractorResult.entities.map(
+        (e) => e.id,
+      );
+    }
+
     // Shuffle premises to mix different relation types (makes it harder)
-    const shuffledPremises = this.random.shuffle(allPremises);
+    const shuffledPremises = this.random.shuffle(augmentedPremises);
 
     // Pick one path for the conclusion
     const conclusionPath = this.random.pickRandom(paths);
@@ -186,6 +204,11 @@ export class PathBasedQuestionGenerator {
       console.log("   Inferred Vector:", conclusion.properties.vector);
     }
     console.log("Valid?", isValid);
+    if (distractorMeta.distractorCount > 0) {
+      console.log(
+        `Distractors: ${distractorMeta.distractorCount} extra premise(s) with new entities`,
+      );
+    }
     console.log("========================\n");
 
     // Get spatial grid if any spatial path exists
@@ -206,6 +229,7 @@ export class PathBasedQuestionGenerator {
         level: numPaths > 1 ? numPaths : 0,
         numPaths: numPaths,
         spatialGrid: spatialPath?.pathProperties.spatialGrid,
+        ...distractorMeta,
       },
     });
 
@@ -454,6 +478,68 @@ export class PathBasedQuestionGenerator {
       pathProperties,
       vocabulary,
     });
+  }
+
+  /**
+   * Inject distractor premises: valid relations involving new entities that
+   * cannot affect the conclusion (new entities are dead-ends by construction).
+   *
+   * @param {Entity[]} coreEntities - The entities already in the question
+   * @param {Path} conclusionPath - The path whose conclusion entity pair we must NOT bridge
+   * @param {number} numDistractors - How many distractor premises to add
+   * @returns {{ relations: Relation[], entities: Entity[] }}
+   */
+  injectDistractors(coreEntities, conclusionPath, numDistractors) {
+    const relations = [];
+    const newEntities = [];
+
+    // The conclusion endpoints — we never pick these as the "anchor" for a
+    // distractor because a distractor entity bridging them could matter.
+    // Using a middle entity (not first/last) is always safe.
+    const conclusionEndpoints = new Set([
+      conclusionPath.entities[0].id,
+      conclusionPath.entities[conclusionPath.entities.length - 1].id,
+    ]);
+    const safeAnchors = coreEntities.filter(
+      (e) => !conclusionEndpoints.has(e.id),
+    );
+    // Fall back to all core entities if no middle entities exist (short paths)
+    const anchors = safeAnchors.length > 0 ? safeAnchors : coreEntities;
+
+    // Use a Linear relation for distractors — simple and always renderable
+    const linType = new LinearRelationType();
+    const dimensions = this.config.linearDimensions || [
+      "size",
+      "speed",
+      "brightness",
+    ];
+
+    for (let i = 0; i < numDistractors; i++) {
+      const distractorEntity = this.entityFactory.createEntity();
+      newEntities.push(distractorEntity);
+
+      // Pick a random anchor from safe middle entities
+      const anchor = this.random.pickRandom(anchors);
+
+      // Pick dimension & vocabulary
+      const dimension = this.random.pickRandom(dimensions);
+      const vocab = LINEAR_VOCABULARIES[dimension] || LINEAR_VOCABULARIES.size;
+      const useForward = this.random.coinFlip();
+      const text = useForward
+        ? this.random.pickRandom(vocab.forward)
+        : this.random.pickRandom(vocab.backward);
+      const direction = useForward ? 1 : -1;
+
+      // Relation: distractorEntity [rel] anchor  (distractor is always an endpoint)
+      const rel = linType.createRelation([distractorEntity, anchor], {
+        dimension,
+        direction,
+        text,
+      });
+      relations.push(rel);
+    }
+
+    return { relations, entities: newEntities };
   }
 
   /**

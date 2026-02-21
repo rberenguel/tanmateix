@@ -40,6 +40,16 @@ The game features various types of logical relationships including:
 
 Some questions are genuinely underdetermined — the premises don't establish any ordering between the conclusion entities. These require a third answer: **Cannot be determined** (the shrug button). Selecting True or False on an indeterminate question is wrong; selecting True or False on a normal question is also wrong — the shrug button is always visible to avoid revealing the question type.
 
+### Distractor Premises
+
+At higher difficulty levels (≥3), some questions include one or two extra premises about entities that are completely irrelevant to the conclusion. These distractors are valid statements — they're just about a different entity that doesn't connect to either conclusion endpoint. The player must identify which premises actually matter and ignore the rest.
+
+**Example:**
+
+- **Core premises:** "GAKUN is larger than FOBIX", "GAKUN is smaller than JEPOL"
+- **Distractor:** "MIVAT is larger than GAKUN" ← irrelevant entity
+- **Conclusion:** "Is JEPOL larger than FOBIX?" → True ✓ (MIVAT is a dead end)
+
 ### Advanced: Multi-Path Questions
 
 The game supports generating questions with multiple premise paths over the **same entities**. Each path uses a different relationship type (linear, spatial, or syllogistic), and you can configure both the number of paths and the length of each path.

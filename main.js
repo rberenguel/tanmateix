@@ -144,6 +144,12 @@ function calculateTimeLimit(question, level) {
     timeLimit = Math.ceil(timeLimit * 1.2);
   }
 
+  // Each distractor premise adds 0.5 × TPP extra time
+  const distractorCount = question.metadata?.distractorCount ?? 0;
+  if (distractorCount > 0) {
+    timeLimit = Math.ceil(timeLimit + distractorCount * tpp * 0.5);
+  }
+
   return timeLimit;
 }
 
@@ -283,9 +289,19 @@ window.tanmateix = {
 async function newQuestion() {
   // Use difficulty settings
   const { numPaths, entitiesPerPath, level } = gameState.difficulty;
+
+  // Determine distractor count based on level
+  let numDistractors = 0;
+  if (level >= 6) {
+    numDistractors = random.random() < 0.5 ? 2 : 1;
+  } else if (level >= 3) {
+    numDistractors = random.random() < 0.5 ? 1 : 0;
+  }
+
   gameState.currentQuestion = await generator.generateMultiPathQuestion(
     numPaths,
     entitiesPerPath,
+    { numDistractors },
   );
   gameState.answered = false;
 
