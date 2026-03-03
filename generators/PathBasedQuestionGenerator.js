@@ -45,7 +45,13 @@ export class PathBasedQuestionGenerator {
     const { forceRelationType } = options;
 
     // ~25% chance of generating an indeterminate question (Linear, single-path only)
-    if (numPaths === 1 && entitiesPerPath >= 3 && this.random.random() < 0.25) {
+    // Skip if a specific relation type is forced (e.g. testSyllogistic)
+    if (
+      !forceRelationType &&
+      numPaths === 1 &&
+      entitiesPerPath >= 3 &&
+      this.random.random() < 0.25
+    ) {
       return await this.generateIndeterminateLinearQuestion(entitiesPerPath);
     }
 
@@ -236,7 +242,6 @@ export class PathBasedQuestionGenerator {
     // Verify question logic for all relation types
     const relationType = conclusionPath.relationType.name;
     let verificationQuestion = question;
-    let spatialGrid = null;
 
     // For multi-path questions with mixed types, extract only premises matching the conclusion type
     if (
@@ -259,17 +264,8 @@ export class PathBasedQuestionGenerator {
       });
     }
 
-    // Get spatial grid if needed
-    if (relationType === "Spatial") {
-      const spatialPath = paths.find((p) => p.relationType.name === "Spatial");
-      spatialGrid = spatialPath.pathProperties.spatialGrid;
-    }
-
     // Verify the question
-    const verification = await this.verifier.verifyQuestion(
-      verificationQuestion,
-      spatialGrid,
-    );
+    const verification = await this.verifier.verifyQuestion(verificationQuestion);
 
     if (!verification.valid) {
       console.error(
@@ -423,7 +419,7 @@ export class PathBasedQuestionGenerator {
     } else if (relationType instanceof SpatialRelationType) {
       // Use grid-based positioning for spatial relations
       const spatialGrid = new SpatialGrid();
-      spatialGrid.placeEntitiesRandomly(entities);
+      spatialGrid.placeEntitiesAsWalk(entities);
 
       // Pick vocabulary style ONCE for consistency
       const vocabStyle = this.random.pickRandom(["cardinal", "relative"]);
@@ -609,7 +605,10 @@ export class PathBasedQuestionGenerator {
     // Pick two random entities for conclusion
     const [e1, e2] = this.random.shuffle([...entities]).slice(0, 2);
     const conclusionVector = spatialGrid.getVector(e1, e2);
-    const conclusionVectorKey = JSON.stringify(conclusionVector);
+    const normalizedConclusionVector = conclusionVector.map((v) =>
+      v === 0 ? 0 : v / Math.abs(v),
+    );
+    const conclusionVectorKey = JSON.stringify(normalizedConclusionVector);
     const conclusionText = vocabSet[conclusionVectorKey]
       ? vocabSet[conclusionVectorKey][0]
       : "relates to";
@@ -621,12 +620,12 @@ export class PathBasedQuestionGenerator {
     if (isValid) {
       conclusion = relationType.createRelation([e2, e1], {
         text: conclusionText,
-        vector: conclusionVector,
+        vector: normalizedConclusionVector,
         vocabStyle,
       });
     } else {
-      // Invalid: use wrong vector
-      const wrongVector = conclusionVector.map((v) => -v); // Flip direction
+      // Invalid: use wrong vector (flip the normalized direction)
+      const wrongVector = normalizedConclusionVector.map((v) => -v);
       const wrongVectorKey = JSON.stringify(wrongVector);
       const wrongText = vocabSet[wrongVectorKey]
         ? vocabSet[wrongVectorKey][0]
@@ -660,11 +659,8 @@ export class PathBasedQuestionGenerator {
       },
     });
 
-    // Verify question with Prolog
-    const verification = await this.verifier.verifyQuestion(
-      question,
-      spatialGrid,
-    );
+    // Verify question
+    const verification = await this.verifier.verifyQuestion(question);
     if (!verification.valid) {
       console.error("❌ SPATIAL VERIFICATION FAILED:", verification.error);
       console.error("Question details:", verification.details);

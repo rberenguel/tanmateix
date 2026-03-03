@@ -28,18 +28,27 @@ export class Renderer {
   }
 
   /**
+   * Render a single entity — icon or text pill depending on entity type
+   */
+  renderEntity(entity) {
+    if (entity.iconName) {
+      return `<i class="ph-light ph-${entity.iconName} entity-icon"></i>`;
+    }
+    return `<span class="entity">${this.escapeHtml(entity.displayValue)}</span>`;
+  }
+
+  /**
    * Render a single premise
    */
   renderPremise(premise) {
     const [entityA, entityB] = premise.entities;
-    // Use stored text if available, otherwise fall back to getRelationText
     const relationText =
       premise.properties.text || getRelationText(premise, this.options.minimal);
 
     return `<div class="premise">
-      <span class="entity">${this.escapeHtml(entityA.displayValue)}</span>
+      ${this.renderEntity(entityA)}
       <span class="relation">${relationText}</span>
-      <span class="entity">${this.escapeHtml(entityB.displayValue)}</span>
+      ${this.renderEntity(entityB)}
     </div>`;
   }
 
@@ -48,16 +57,17 @@ export class Renderer {
    */
   renderConclusion(conclusion) {
     const [entityA, entityB] = conclusion.entities;
-    // Use stored text if available, otherwise fall back to getRelationText
     const relationText =
       conclusion.properties.text ||
       getRelationText(conclusion, this.options.minimal);
 
     return `<div class="conclusion">
-      <span class="entity">${this.escapeHtml(entityA.displayValue)}</span>
+      ${this.renderEntity(entityA)}
       <span class="relation">${relationText}</span>
-      <span class="entity">${this.escapeHtml(entityB.displayValue)}</span>
-      <span class="question-mark">?</span>
+      <span class="conclusion-tail">
+        ${this.renderEntity(entityB)}
+        <span class="question-mark">?</span>
+      </span>
     </div>`;
   }
 

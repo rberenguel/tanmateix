@@ -62,10 +62,7 @@ const gameState = {
 // Setup
 const random = new RandomUtils();
 const entityFactory = new EntityFactory(
-  {
-    useNonsenseWords: true,
-    nonsenseWordLength: 3,
-  },
+  { useIcons: true },
   random,
 );
 
@@ -206,6 +203,29 @@ window.tanmateix = {
     window.tanmateix.entitiesPerPath = entities;
     window.tanmateix.numPaths = 1;
     return window.tanmateix.newQuestion();
+  },
+
+  // Force a spatial question (positional reasoning)
+  testSpatial: async (entities = 3) => {
+    document.getElementById("start-screen").classList.remove("visible");
+
+    const question = await generator.generateMultiPathQuestion(1, entities, {
+      forceRelationType: "Spatial",
+    });
+    gameState.currentQuestion = question;
+    gameState.answered = false;
+
+    const container = document.getElementById("game-container");
+    container.innerHTML = renderer.renderGameUI(question);
+
+    container.querySelectorAll(".btn").forEach((btn) => {
+      btn.addEventListener("click", handleAnswer);
+    });
+
+    const debugInfo = document.getElementById("debug-info");
+    debugInfo.innerHTML = renderer.renderNetworkInfo(question);
+
+    return question;
   },
 
   // Force a syllogistic question (subset/disjoint reasoning)

@@ -1,70 +1,79 @@
+// All 8 unit directions: [dx, dy]
+const UNIT_DIRECTIONS = [
+  [-1, 1], [0, 1], [1, 1],
+  [-1, 0],         [1, 0],
+  [-1,-1], [0,-1], [1,-1],
+];
+
 /**
- * SpatialGrid - Concrete 3x3 grid for placing entities in 2D space
+ * SpatialGrid - tracks entity positions in 2D space.
  *
- * Places entities at actual positions on a grid and calculates
- * real spatial relationships between them.
- *
- * Grid layout:
- * [0,2] [1,2] [2,2]    [NW] [N] [NE]
- * [0,1] [1,1] [2,1]    [W]  [C] [E]
- * [0,0] [1,0] [2,0]    [SW] [S] [SE]
+ * For path-based questions, entities are placed via a unit-step walk:
+ * each consecutive pair is exactly 1 step apart in any of 8 directions.
+ * This makes every direction clue ("northeast of") unambiguous regardless
+ * of how many steps apart entities are.
  */
 export class SpatialGrid {
   constructor() {
-    this.grid = Array(3)
-      .fill(null)
-      .map(() => Array(3).fill(null));
-    this.centerPosition = [1, 1]; // Center of grid
     this.entityPositions = new Map(); // entity.id -> [x, y]
+    this.entityObjects = new Map();   // entity.id -> entity (for toString)
   }
 
   /**
-   * Place an entity at a specific grid position
+   * Place entities using a unit-step walk.
+   * Each consecutive pair is exactly 1 step apart (any of 8 directions).
+   * The reverse of the previous step is excluded to avoid trivial cancellation.
    */
-  placeEntity(entity, position) {
-    const [x, y] = position;
+  placeEntitiesAsWalk(entities) {
+    let x = 0, y = 0;
+    this.entityPositions.set(entities[0].id, [x, y]);
+    this.entityObjects.set(entities[0].id, entities[0]);
 
-    if (x < 0 || x > 2 || y < 0 || y > 2) {
-      throw new Error(`Invalid position: [${x}, ${y}]. Must be 0-2.`);
+    let prevDir = null;
+
+    for (let i = 1; i < entities.length; i++) {
+      const available = prevDir
+        ? UNIT_DIRECTIONS.filter(([dx, dy]) => !(dx === -prevDir[0] && dy === -prevDir[1]))
+        : UNIT_DIRECTIONS;
+
+      const [dx, dy] = available[Math.floor(Math.random() * available.length)];
+      x += dx;
+      y += dy;
+      prevDir = [dx, dy];
+      this.entityPositions.set(entities[i].id, [x, y]);
+      this.entityObjects.set(entities[i].id, entities[i]);
     }
-
-    if (this.grid[y][x] !== null) {
-      throw new Error(`Position [${x}, ${y}] is already occupied.`);
-    }
-
-    this.grid[y][x] = entity;
-    this.entityPositions.set(entity.id, position);
   }
 
   /**
-   * Place entities randomly on the grid
-   * First entity always goes in center [1,1]
-   * Other entities go in random available positions
+   * Place entities randomly on a 3x3 grid (legacy, used by generateSpatialGraphQuestion)
    */
   placeEntitiesRandomly(entities) {
     if (entities.length > 9) {
       throw new Error("Cannot place more than 9 entities on 3x3 grid");
     }
 
-    // Place first entity in center for clarity
-    this.placeEntity(entities[0], this.centerPosition);
+    const grid = Array(3).fill(null).map(() => Array(3).fill(null));
 
-    // Get all available positions (excluding center)
+    // Place first entity in center
+    grid[1][1] = entities[0];
+    this.entityPositions.set(entities[0].id, [1, 1]);
+    this.entityObjects.set(entities[0].id, entities[0]);
+
     const availablePositions = [];
     for (let y = 0; y < 3; y++) {
       for (let x = 0; x < 3; x++) {
-        if (x === 1 && y === 1) continue; // Skip center
+        if (x === 1 && y === 1) continue;
         availablePositions.push([x, y]);
       }
     }
-
-    // Shuffle available positions
     this.shuffleArray(availablePositions);
 
-    // Place remaining entities
     for (let i = 1; i < entities.length; i++) {
-      const position = availablePositions.pop();
-      this.placeEntity(entities[i], position);
+      const [x, y] = availablePositions.pop();
+      grid[y][x] = entities[i];
+      this.entityPositions.set(entities[i].id, [x, y]);
+      this.entityObjects.set(entities[i].id, entities[i]);
     }
   }
 
@@ -118,19 +127,27 @@ export class SpatialGrid {
   }
 
   /**
-   * Get a visual representation of the grid (for debugging)
+   * Get a visual representation of the entity positions (for debugging)
    */
   toString() {
+    if (this.entityPositions.size === 0) return "Empty grid\n";
+
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    const posToLabel = new Map();
+
+    for (const [id, [x, y]] of this.entityPositions.entries()) {
+      minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+      minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+      const entity = this.entityObjects.get(id);
+      posToLabel.set(`${x},${y}`, entity ? entity.displayValue.substring(0, 5) : id.substring(0, 5));
+    }
+
     let result = "Grid (y increases upward):\n";
-    for (let y = 2; y >= 0; y--) {
+    for (let y = maxY; y >= minY; y--) {
       const row = [];
-      for (let x = 0; x < 3; x++) {
-        const entity = this.grid[y][x];
-        if (entity) {
-          row.push(entity.displayValue.substring(0, 5).padEnd(5));
-        } else {
-          row.push("  .  ");
-        }
+      for (let x = minX; x <= maxX; x++) {
+        const label = posToLabel.get(`${x},${y}`);
+        row.push(label ? label.padEnd(5) : "  .  ");
       }
       result += row.join(" ") + "\n";
     }

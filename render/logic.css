@@ -222,7 +222,7 @@ header {
   background: rgba(56, 189, 248, 0.05);
   border: 2px solid rgba(56, 189, 248, 0.3);
   border-radius: 12px;
-  padding: 12px;
+  padding: 8px 6px;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -235,14 +235,14 @@ header {
 }
 
 .conclusion {
-  padding: 12px;
+  padding: 8px 4px;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
   flex-wrap: wrap;
-  font-size: 1.1rem;
+  font-size: 1rem;
   line-height: 1.5;
   font-weight: 500;
 }
@@ -251,14 +251,21 @@ header {
 .entity {
   background: var(--tile);
   color: var(--tile-text);
-  padding: 6px 12px;
-  border-radius: 6px;
+  padding: 3px 8px;
+  border-radius: 5px;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.82rem;
   border: 1px solid var(--tile-border);
   box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.3);
   text-shadow: 0.5px 0.5px 1px rgba(0, 0, 0, 0.1);
   white-space: nowrap;
+}
+
+.entity-icon {
+  font-size: 1.9rem;
+  color: var(--fg);
+  line-height: 1;
+  -webkit-text-stroke: 0.4px currentColor;
 }
 
 .relation {
@@ -269,11 +276,17 @@ header {
   padding: 2px 6px;
 }
 
+.conclusion-tail {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  white-space: nowrap;
+}
+
 .question-mark {
   color: var(--accent);
   font-size: 1.5em;
   font-weight: bold;
-  margin-left: 8px;
 }
 
 /* Answer Buttons */
@@ -436,14 +449,18 @@ header {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  body {
+    padding: 8px;
+  }
+
   .premises-container {
-    padding: 16px;
+    padding: 12px 6px;
     gap: 10px;
   }
 
   .premise {
     font-size: 1rem;
-    padding: 10px 14px;
+    padding: 10px 10px;
     gap: 8px;
   }
 
@@ -452,7 +469,7 @@ header {
   }
 
   .conclusion {
-    font-size: 1.1rem;
+    font-size: 1rem;
   }
 
   /* Compact adjustments for mobile */
@@ -488,11 +505,6 @@ header {
     min-width: 120px;
   }
 
-  .entity {
-    padding: 5px 10px;
-    font-size: 0.9rem;
-  }
-
   .relation {
     font-size: 0.85rem;
   }
@@ -510,8 +522,8 @@ header {
   }
 
   .conclusion {
-    font-size: 1.05rem;
-    padding: 16px;
+    font-size: 1rem;
+    padding: 6px 2px;
   }
 
   /* Extra compact for very small screens with many premises */
@@ -551,8 +563,8 @@ header {
   }
 
   .entity {
-    padding: 4px 8px;
-    font-size: 0.85rem;
+    padding: 2px 6px;
+    font-size: 0.78rem;
   }
 
   .relation {

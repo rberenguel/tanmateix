@@ -1,18 +1,49 @@
 import { Entity } from "../core/Entity.js";
 
+// Curated phosphor icon names — visually distinct, non-directional, recognizable at small sizes
+const ICON_POOL = [
+  // Nature & sky
+  "acorn", "butterfly", "cactus", "campfire", "cloud", "feather",
+  "fire", "flower-tulip", "leaf", "lightning", "meteor", "moon",
+  "mountains", "rainbow", "snowflake", "star", "sun", "tree-evergreen",
+  "wind",
+  // Animals
+  "bird", "cat", "dog", "fish", "horse", "paw-print", "rabbit", "shrimp",
+  // Food & drink
+  "avocado", "bread", "cake", "carrot", "cheese", "cherries",
+  "coffee", "cooking-pot", "egg-crack", "ice-cream", "orange", "pizza",
+  // Tools & objects
+  "anchor", "axe", "barbell", "bell", "binoculars", "bomb",
+  "book-open", "boot", "brain", "camera", "crown",
+  "flashlight", "gear-six",
+  "hammer", "hourglass-simple", "jar", "key", "knife",
+  "lamp", "lighthouse", "lock-simple", "magnet", "medal",
+  "microscope", "paint-brush", "piano-keys",
+  "piggy-bank", "puzzle-piece", "rocket", "sailboat",
+  "skull", "sword", "target", "tent",
+  "thermometer-simple", "treasure-chest", "trophy",
+  "umbrella", "watch", "wrench",
+  // Fun & misc
+  "alien", "balloon", "bicycle", "bowling-ball", "castle-turret",
+  "ghost", "graduation-cap", "guitar", "island", "joystick",
+  "planet", "potted-plant", "soccer-ball", "sunglasses",
+  "windmill", "yin-yang",
+];
+
 /**
  * EntityFactory creates unique entities with various display values.
- * This is a simplified version - can be extended with more generators.
  */
 export class EntityFactory {
   /**
    * @param {Object} config
-   * @param {boolean} config.useNonsenseWords
+   * @param {boolean} config.useIcons - Use phosphor icons instead of nonsense words
+   * @param {boolean} config.useNonsenseWords - Use nonsense word generation (legacy)
    * @param {number} config.nonsenseWordLength
    * @param {RandomUtils} random
    */
   constructor(config = {}, random = null) {
     this.config = {
+      useIcons: config.useIcons || false,
       useNonsenseWords: config.useNonsenseWords !== false,
       nonsenseWordLength: config.nonsenseWordLength || 5,
       ...config,
@@ -24,8 +55,6 @@ export class EntityFactory {
 
   /**
    * Create N entities
-   * @param {number} count
-   * @returns {Entity[]}
    */
   createEntities(count) {
     const entities = [];
@@ -37,17 +66,16 @@ export class EntityFactory {
 
   /**
    * Create a single entity
-   * @returns {Entity}
    */
   createEntity() {
-    const displayValue = this.generateUniqueValue();
+    const value = this.generateUniqueValue();
     const id = `entity_${Date.now()}_${this.counter++}_${Math.random().toString(36).substr(2, 9)}`;
-    return new Entity(id, displayValue);
+    const iconName = this.config.useIcons ? value : null;
+    return new Entity(id, value, iconName);
   }
 
   /**
    * Generate a unique display value
-   * @returns {string}
    */
   generateUniqueValue() {
     let value;
@@ -69,93 +97,46 @@ export class EntityFactory {
 
   /**
    * Generate a single value (may not be unique)
-   * @returns {string}
    */
   generateValue() {
-    // For now, just use nonsense words
-    // This can be extended to support emoji, meaningful words, etc.
+    if (this.config.useIcons) {
+      return ICON_POOL[Math.floor(this.random.random() * ICON_POOL.length)];
+    }
     return this.createNonsenseWord();
   }
 
   /**
    * Create a nonsense word (consonant-vowel pattern)
-   * @returns {string}
    */
   createNonsenseWord() {
     const vowels = ["A", "E", "I", "O", "U"];
     const consonants = [
-      "B",
-      "C",
-      "D",
-      "F",
-      "G",
-      "H",
-      "J",
-      "K",
-      "L",
-      "M",
-      "N",
-      "P",
-      "Q",
-      "R",
-      "S",
-      "T",
-      "V",
-      "W",
-      "X",
-      "Y",
-      "Z",
+      "B", "C", "D", "F", "G", "H", "J", "K", "L", "M",
+      "N", "P", "Q", "R", "S", "T", "V", "W", "X", "Y", "Z",
     ];
-    // Banned words to avoid offensive combinations
     const bannedWords = [
-      "DIC",
-      "DIK",
-      "COC",
-      "COK",
-      "FUC",
-      "FUK",
-      "FEC",
-      "FEK",
-      "NIG",
-      "PIS",
-      "TIT",
-      "SEX",
-      "GAY",
-      "FAG",
-      "CUM",
-      "ASS",
-      "FUCK",
-      "SHIT",
-      "DAMN",
-      "HELL",
-      "CRAP",
-      "PISS",
+      "DIC", "DIK", "COC", "COK", "FUC", "FUK", "FEC", "FEK",
+      "NIG", "PIS", "TIT", "SEX", "GAY", "FAG", "CUM", "ASS",
+      "FUCK", "SHIT", "DAMN", "HELL", "CRAP", "PISS",
     ];
 
     let word = "";
     const length = this.config.nonsenseWordLength;
 
     for (let i = 0; i < 100; i++) {
-      // Max 100 attempts
       word = "";
       for (let j = 0; j < length; j++) {
         if (j % 2 === 0) {
-          // Consonant
-          word +=
-            consonants[Math.floor(this.random.random() * consonants.length)];
+          word += consonants[Math.floor(this.random.random() * consonants.length)];
         } else {
-          // Vowel
           word += vowels[Math.floor(this.random.random() * vowels.length)];
         }
       }
-
-      // Check if word contains banned substring
       if (!bannedWords.some((banned) => word.includes(banned))) {
         return word;
       }
     }
 
-    // Fallback if we can't generate a clean word
     return word;
   }
 
